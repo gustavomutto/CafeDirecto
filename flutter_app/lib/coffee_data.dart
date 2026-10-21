@@ -1,0 +1,233 @@
+import 'models.dart';
+
+const coffeeFarms = <CoffeeFarm>[
+  CoffeeFarm(
+    id: 'f1',
+    name: 'Finca La Esperanza',
+    producer: 'Luz Marina Cuéllar',
+    region: 'Huila',
+    town: 'Pitalito',
+    altitude: 1750,
+    rating: 4.8,
+    description:
+        'Tres generaciones cultivando café en las montañas de Pitalito. Lotes separados y secados lentamente en marquesina.',
+  ),
+  CoffeeFarm(
+    id: 'f2',
+    name: 'Finca El Mirador',
+    producer: 'Jesús Ordóñez',
+    region: 'Nariño',
+    town: 'Buesaco',
+    altitude: 2150,
+    rating: 4.9,
+    description:
+        'Café de altura frente al volcán Galeras, cultivado en familia con una acidez brillante.',
+  ),
+  CoffeeFarm(
+    id: 'f3',
+    name: 'Finca Los Naranjos',
+    producer: 'Ana Lucía Muñoz',
+    region: 'Cauca',
+    town: 'Inzá',
+    altitude: 1850,
+    rating: 4.7,
+    description:
+        'Asociación de mujeres caficultoras. Café bajo sombra de naranjos y guamos.',
+  ),
+  CoffeeFarm(
+    id: 'f4',
+    name: 'Finca La Cristalina',
+    producer: 'Carlos Rojas',
+    region: 'Quindío',
+    town: 'Salento',
+    altitude: 1900,
+    rating: 4.9,
+    description:
+        'Microlotes de altura con procesos naturales y fermentación controlada.',
+  ),
+  CoffeeFarm(
+    id: 'f5',
+    name: 'Finca El Porvenir',
+    producer: 'Marta Rivera',
+    region: 'Huila',
+    town: 'Acevedo',
+    altitude: 1800,
+    rating: 4.8,
+    description:
+        'Café familiar de montaña con cosecha selectiva y secado solar.',
+  ),
+  CoffeeFarm(
+    id: 'f6',
+    name: 'Finca Sierra Nevada',
+    producer: 'José Díaz',
+    region: 'Magdalena',
+    town: 'Minca',
+    altitude: 1650,
+    rating: 4.6,
+    description:
+        'Café cultivado bajo sombra en las estribaciones de la Sierra Nevada.',
+  ),
+];
+
+const sampleLots = <CoffeeLot>[
+  CoffeeLot(
+    id: 'l1',
+    farmId: 'f1',
+    name: 'Lote Mandarina',
+    variety: 'Pink Bourbon',
+    process: 'Honey',
+    sacks: 28,
+    score: 87.5,
+    price: 5.9,
+    notes: ['Panela', 'Mandarina', 'Cacao'],
+  ),
+  CoffeeLot(
+    id: 'l2',
+    farmId: 'f1',
+    name: 'Lote Familia',
+    variety: 'Caturra',
+    process: 'Lavado',
+    sacks: 12,
+    score: 86,
+    price: 5.1,
+    notes: ['Chocolate', 'Caramelo', 'Cítrico'],
+  ),
+  CoffeeLot(
+    id: 'l3',
+    farmId: 'f2',
+    name: 'Lote Galeras',
+    variety: 'Castillo',
+    process: 'Lavado',
+    sacks: 18,
+    score: 88,
+    price: 6.4,
+    notes: ['Floral', 'Cítrico', 'Caramelo'],
+  ),
+  CoffeeLot(
+    id: 'l4',
+    farmId: 'f3',
+    name: 'Lote Mujeres de Inzá',
+    variety: 'Colombia',
+    process: 'Honey',
+    sacks: 22,
+    score: 86,
+    price: 5.5,
+    notes: ['Durazno', 'Chocolate', 'Miel'],
+  ),
+  CoffeeLot(
+    id: 'l5',
+    farmId: 'f4',
+    name: 'Geisha Cristalina',
+    variety: 'Geisha',
+    process: 'Natural',
+    sacks: 6,
+    score: 89,
+    price: 13.8,
+    notes: ['Jazmín', 'Bergamota', 'Frutos rojos'],
+  ),
+  CoffeeLot(
+    id: 'l6',
+    farmId: 'f5',
+    name: 'Natural del Atá',
+    variety: 'Caturra',
+    process: 'Natural',
+    sacks: 30,
+    score: 85,
+    price: 4.9,
+    notes: ['Frutos rojos', 'Vino', 'Chocolate'],
+  ),
+  CoffeeLot(
+    id: 'l7',
+    farmId: 'f6',
+    name: 'Sierra Orgánico',
+    variety: 'Castillo',
+    process: 'Lavado',
+    sacks: 40,
+    score: 83,
+    price: 4.3,
+    notes: ['Chocolate', 'Nuez', 'Caramelo'],
+  ),
+  CoffeeLot(
+    id: 'l8',
+    farmId: 'f3',
+    name: 'Lote Guamo',
+    variety: 'Castillo',
+    process: 'Lavado',
+    sacks: 35,
+    score: 84,
+    price: 4.6,
+    notes: ['Chocolate', 'Manzana', 'Miel'],
+  ),
+];
+
+const sampleConversations = <DemoConversation>[
+  DemoConversation(
+    id: 'c1',
+    farmId: 'f1',
+    buyer: 'Marcus Reed',
+    company: 'Ember & Oak · Portland',
+    preview: 'We can commit to 20 bags if we meet at 5.45.',
+    unread: 2,
+    lotId: 'l1',
+  ),
+  DemoConversation(
+    id: 'c2',
+    farmId: 'f1',
+    buyer: 'Yuki Tanaka',
+    company: 'Kissa Hikari · Tokio',
+    preview: 'The coffee arrived perfectly. Arigato!',
+    unread: 0,
+    lotId: 'l2',
+  ),
+  DemoConversation(
+    id: 'c3',
+    farmId: 'f2',
+    buyer: 'Lena Fischer',
+    company: 'Nordlicht Kaffeerösterei · Berlín',
+    preview: 'Thank you! Your coffee profile is wonderful.',
+    unread: 1,
+    lotId: 'l3',
+  ),
+];
+
+const sampleAgreements = <CoffeeAgreement>[
+  CoffeeAgreement(
+    code: 'CD-2026-0098',
+    lotId: 'l2',
+    buyer: 'Yuki Tanaka · Kissa Hikari',
+    sacks: 15,
+    price: 5.1,
+    status: 'Entregado',
+  ),
+  CoffeeAgreement(
+    code: 'CD-2026-0101',
+    lotId: 'l5',
+    buyer: 'Lena Fischer · Nordlicht',
+    sacks: 5,
+    price: 13.8,
+    status: 'Enviado',
+  ),
+];
+
+const learnItems = <({String title, String subtitle, String icon})>[
+  (
+    title: 'Cómo vender tu café',
+    subtitle: 'Del perfil al primer acuerdo',
+    icon: '🌱',
+  ),
+  (
+    title: 'Calidad y puntaje SCA',
+    subtitle: 'Entiende la puntuación de taza',
+    icon: '☕',
+  ),
+  (
+    title: 'Exportación paso a paso',
+    subtitle: 'Documentos y logística',
+    icon: '📦',
+  ),
+  (
+    title: 'Comisiones y condiciones',
+    subtitle: 'Calcula cuánto recibes',
+    icon: '💰',
+  ),
+];
