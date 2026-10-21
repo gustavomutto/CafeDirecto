@@ -276,7 +276,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Text(t('📍 Departamento', 'Region'), style: p.text(size: p.fs - 2, weight: FontWeight.w700)),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: region,
+          initialValue: region,
           items: [for (final r in regions) DropdownMenuItem(value: r, child: Text(r, style: p.text()))],
           onChanged: (v) => setState(() => region = v ?? region),
         ),
