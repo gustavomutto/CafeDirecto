@@ -5,7 +5,7 @@ import '../theme/palette.dart';
 import 'app_state.dart';
 
 class AppScope extends InheritedNotifier<AppState> {
-  const AppScope({super.key, required AppState state, required Widget child}) : super(notifier: state, child: child);
+  const AppScope({super.key, required AppState state, required super.child}) : super(notifier: state);
 
   static AppState of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();

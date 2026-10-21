@@ -13,15 +13,32 @@ const _labels = {
   'en': ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent!'],
 };
 
-class RateAgreementScreen extends StatefulWidget {
-  final String agreementId;
+class RateAgreementScreen extends StatelessWidget {
+  final int agreementId;
   const RateAgreementScreen({super.key, required this.agreementId});
 
   @override
-  State<RateAgreementScreen> createState() => _RateAgreementScreenState();
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final p = context.pal;
+    return Loader<Agreement>(
+      load: () async => Agreement.fromJson(await app.api.get('/agreements/$agreementId') as Map),
+      frame: (c) => Scaffold(backgroundColor: p.bg, body: SafeArea(child: Column(children: [const TopBar(), Expanded(child: c)]))),
+      builder: (context, a, _) => _RateForm(agreement: a),
+    );
+  }
 }
 
-class _RateAgreementScreenState extends State<RateAgreementScreen> {
+class _RateForm extends StatefulWidget {
+  final Agreement agreement;
+  const _RateForm({required this.agreement});
+
+  @override
+  State<_RateForm> createState() => _RateFormState();
+}
+
+class _RateFormState extends State<_RateForm> {
+  bool _busy = false;
   int stars = 0;
   final Set<String> tags = {};
   final _comment = TextEditingController();
