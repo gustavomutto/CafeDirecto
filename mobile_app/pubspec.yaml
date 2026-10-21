@@ -1,0 +1,30 @@
+name: cafedirecto
+description: "CaféDirecto · conecta caficultores colombianos con compradores de café de especialidad."
+publish_to: 'none'
+version: 2.0.0+2
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Llamadas a la API en Railway
+  http: ^1.2.0
+  http_parser: ^4.0.2
+  # Guarda la sesión (token) en el teléfono
+  shared_preferences: ^2.2.0
+  # Elegir fotos de la galería o tomarlas con la cámara
+  image_picker: ^1.1.0
+  # Dictado por voz (reconocimiento de voz del teléfono)
+  speech_to_text: ^7.0.0
+  # Tipografías Fraunces, Nunito e Inter
+  google_fonts: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
