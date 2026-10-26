@@ -9,7 +9,7 @@
 // ─────────────────────────────────────────────────────────────────
 const String apiUrl = String.fromEnvironment(
   'API_URL',
-  defaultValue: 'https://TU-SERVICIO.up.railway.app',
+  defaultValue: 'https://cafedirecto-production.up.railway.app',
 );
 
 /// Convierte rutas como '/images/12' en una URL completa.
