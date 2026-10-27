@@ -1,4 +1,4 @@
--- Esquema de CaféDirecto. Se ejecuta al arrancar el servidor (es idempotente).
+
 
 CREATE TABLE IF NOT EXISTS images (
   id          SERIAL PRIMARY KEY,
