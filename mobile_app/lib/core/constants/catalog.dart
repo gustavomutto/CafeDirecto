@@ -81,3 +81,41 @@ const tagsFor = <String, List<String>>{
 /// Modelo de comisiones (ajustable).
 const feeFarmer = 0.02;
 const feeBuyer = 0.04;
+
+/// Tipos de comprador. El campo es texto libre (versiones anteriores guardaban lo que la persona
+/// escribía), así que [buyerTypeLabel] reconoce la clave o el nombre en cualquiera de los dos idiomas.
+const buyerTypes = <String, Bi>{
+  'roaster': Bi('Tostador', 'Roaster'),
+  'roasting_plant': Bi('Planta de tostado', 'Roasting plant'),
+  'cafe': Bi('Cafetería', 'Coffee shop'),
+  'importer': Bi('Importador', 'Importer'),
+  'exporter': Bi('Exportador', 'Exporter'),
+  'distributor': Bi('Distribuidor', 'Distributor'),
+  'retail': Bi('Tienda de café', 'Coffee retailer'),
+  'trader': Bi('Comercializador', 'Trader'),
+};
+
+String _norm(String s) => s
+    .trim()
+    .toLowerCase()
+    .replaceAll(RegExp('[áà]'), 'a')
+    .replaceAll(RegExp('[éè]'), 'e')
+    .replaceAll(RegExp('[íì]'), 'i')
+    .replaceAll(RegExp('[óò]'), 'o')
+    .replaceAll(RegExp('[úù]'), 'u');
+
+/// Clave del catálogo para un tipo escrito a mano (o null si no es uno conocido).
+String? buyerTypeKey(String raw) {
+  final n = _norm(raw);
+  if (n.isEmpty) return null;
+  for (final e in buyerTypes.entries) {
+    if (n == e.key || n == _norm(e.value.es) || n == _norm(e.value.en)) return e.key;
+  }
+  return null;
+}
+
+/// El tipo de comprador en el idioma pedido; si es un texto propio, se muestra tal cual.
+String buyerTypeLabel(String raw, String lang) {
+  final k = buyerTypeKey(raw);
+  return k == null ? raw : buyerTypes[k]!.of(lang);
+}

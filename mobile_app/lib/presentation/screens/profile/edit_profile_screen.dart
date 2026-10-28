@@ -7,6 +7,7 @@ import '../../../core/constants/catalog.dart';
 import '../../../core/utils/media.dart';
 import '../../../domain/entities/user.dart';
 import '../../providers/app_context.dart';
+import '../../widgets/buyer_type_chips.dart';
 import '../../widgets/common.dart';
 import '../../widgets/photo_picker.dart';
 
@@ -299,6 +300,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Expanded(child: field('country', t('País', 'Country'))),
                 ]),
                 field('type', t('Tipo de comprador', 'Buyer type'), hint: t('Tostador, cafetería, importador…', 'Roaster, café, importer…')),
+                BuyerTypeChips(controller: _c('type'), lang: app.lang),
                 Row(children: [
                   Expanded(child: field('volume', t('Volumen (sacos/año)', 'Volume (bags/year)'))),
                   const SizedBox(width: 10),

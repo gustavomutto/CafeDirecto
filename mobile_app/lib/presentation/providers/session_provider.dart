@@ -96,6 +96,24 @@ class SessionProvider extends ChangeNotifier {
     touch();
   }
 
+  /// Cambia el idioma de TODA la app al instante; el servidor lo guarda en segundo plano
+  /// (así los mensajes del chat y los errores llegan en ese idioma). Si falla, vuelve al anterior.
+  Future<void> setLang(String l) async {
+    final before = _account;
+    if (before == null || before.user.lang == l || (l != 'es' && l != 'en')) return;
+    _account = before.withLang(l);
+    notifyListeners();
+    try {
+      _account = await _auth.setLanguage(l);
+      touch(); // las pantallas recargan sus datos en el idioma nuevo
+      AppLogger.i('Idioma de la app: $l', tag: 'Sesión');
+    } catch (e) {
+      _account = before;
+      notifyListeners();
+      showError(e);
+    }
+  }
+
   Future<void> updateFarmProfile(FarmProfileUpdate data) async {
     _account = await _auth.updateFarmProfile(data);
     touch();

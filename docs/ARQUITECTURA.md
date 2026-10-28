@@ -69,10 +69,20 @@ Gracias a eso, `test/providers_test.dart` prueba los providers con repositorios 
 | `SessionProvider` | Toda la app | Usuario, perfil, idioma, pestaña, avisos breves (toasts) |
 | `NotificationsProvider` | Toda la app | Mensajes y avisos sin leer, lista de la campanita, avisos del teléfono |
 | `MarketProvider` | Toda la app | Precios del café y tasas de cambio (caché 5 min) |
+| `AppearanceProvider` | Toda la app | Modo claro / neutro / oscuro / automático, color principal y tamaño de letra (se guarda en el teléfono) |
 | `ChatRoomController` | Una conversación | Mensajes, acuerdos, envío optimista, consulta cada 3 s |
 | `AuctionDetailController` | Una subasta | Ofertas en vivo (cada 5 s), pujar, adjudicar, cancelar |
 
-Atajos: `context.app` (sesión, se redibuja), `context.session` (sesión en callbacks), `context.repo<T>()` (repositorio).
+Atajos: `context.app` (sesión, se redibuja), `context.session` (sesión en callbacks), `context.repo<T>()` (repositorio),
+`context.pal` (colores del rol con la apariencia elegida) y `context.appearance`.
+
+### Idioma y apariencia
+
+- **Idioma:** `SessionProvider.setLang('en')` cambia toda la app al instante (todas las pantallas usan `app.tr(es, en)`)
+  y lo guarda en el servidor. `ApiClient` manda `Accept-Language` para que los errores lleguen en ese idioma.
+- **Apariencia:** `resolvePalette(rol, mode:, accent:)` arma la paleta (claro, neutro u oscuro, con el color principal
+  elegido) y `buildTheme` el tema de Material. Las pantallas nunca usan colores fijos: siempre `context.pal`.
+  `test/appearance_test.dart` comprueba el contraste (WCAG) de las 60 combinaciones de rol, modo y color.
 
 ### Seguridad en el teléfono
 

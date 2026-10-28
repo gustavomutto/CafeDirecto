@@ -20,7 +20,13 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Account> _startSession(String token) async {
     _api.token = token;
     await _local.saveToken(token);
-    return (await _remote.me()).toEntity();
+    return _track((await _remote.me()).toEntity());
+  }
+
+  /// El cliente HTTP manda el idioma de la cuenta (Accept-Language) para recibir los errores en ese idioma.
+  Account _track(Account a) {
+    _api.lang = a.user.lang;
+    return a;
   }
 
   @override
@@ -29,7 +35,7 @@ class AuthRepositoryImpl implements AuthRepository {
     if (token == null) return null;
     _api.token = token;
     try {
-      final account = (await _remote.me()).toEntity();
+      final account = _track((await _remote.me()).toEntity());
       AppLogger.i('Sesión restaurada para ${account.user.email}', tag: 'Auth');
       return account;
     } on ApiException catch (e) {
@@ -65,16 +71,24 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> deleteAccount(String password) => _remote.deleteAccount(password);
 
   @override
-  Future<Account> me() async => (await _remote.me()).toEntity();
+  Future<Account> me() async => _track((await _remote.me()).toEntity());
 
   @override
-  Future<Account> updateAccount(AccountUpdate data) async => (await _remote.updateAccount(AccountUpdateDto.toJson(data))).toEntity();
+  Future<Account> updateAccount(AccountUpdate data) async => _track((await _remote.updateAccount(AccountUpdateDto.toJson(data))).toEntity());
 
   @override
-  Future<Account> updateFarmProfile(FarmProfileUpdate data) async => (await _remote.updateProfile(FarmProfileUpdateDto.toJson(data))).toEntity();
+  Future<Account> setLanguage(String lang) async {
+    _api.lang = lang;
+    return _track((await _remote.updateAccount({'lang': lang})).toEntity());
+  }
 
   @override
-  Future<Account> updateBuyerProfile(BuyerProfileUpdate data) async => (await _remote.updateProfile(BuyerProfileUpdateDto.toJson(data))).toEntity();
+  Future<Account> updateFarmProfile(FarmProfileUpdate data) async =>
+      _track((await _remote.updateProfile(FarmProfileUpdateDto.toJson(data))).toEntity());
+
+  @override
+  Future<Account> updateBuyerProfile(BuyerProfileUpdate data) async =>
+      _track((await _remote.updateProfile(BuyerProfileUpdateDto.toJson(data))).toEntity());
 
   @override
   Future<PublicProfile> publicProfile(int userId) async {

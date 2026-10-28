@@ -14,6 +14,9 @@ abstract class AuthRepository {
 
   Future<Account> me();
   Future<Account> updateAccount(AccountUpdate data);
+
+  /// Cambia el idioma de la app (ES/EN). El servidor lo guarda para traducir los mensajes que llegan.
+  Future<Account> setLanguage(String lang);
   Future<Account> updateFarmProfile(FarmProfileUpdate data);
   Future<Account> updateBuyerProfile(BuyerProfileUpdate data);
 

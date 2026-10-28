@@ -6,6 +6,7 @@ import 'package:provider/single_child_widget.dart';
 
 import '../core/network/api_client.dart';
 import '../core/notifications/local_notifications.dart';
+import '../data/datasources/local/appearance_local_datasource.dart';
 import '../data/datasources/local/session_local_datasource.dart';
 import '../data/datasources/remote/account_remote_datasource.dart';
 import '../data/datasources/remote/agreement_remote_datasource.dart';
@@ -17,6 +18,7 @@ import '../data/datasources/remote/market_remote_datasource.dart';
 import '../data/datasources/remote/media_remote_datasource.dart';
 import '../data/datasources/remote/notification_remote_datasource.dart';
 import '../data/repositories/agreement_repository_impl.dart';
+import '../data/repositories/appearance_repository_impl.dart';
 import '../data/repositories/auction_repository_impl.dart';
 import '../data/repositories/auth_repository_impl.dart';
 import '../data/repositories/chat_repository_impl.dart';
@@ -32,6 +34,7 @@ import '../domain/repositories/lot_repository.dart';
 import '../domain/repositories/market_repository.dart';
 import '../domain/repositories/media_repository.dart';
 import '../domain/repositories/notification_repository.dart';
+import '../presentation/providers/appearance_provider.dart';
 import '../presentation/providers/market_provider.dart';
 import '../presentation/providers/notifications_provider.dart';
 import '../presentation/providers/session_provider.dart';
@@ -49,6 +52,7 @@ class AppDependencies {
   final SessionProvider session;
   final NotificationsProvider notificationsProvider;
   final MarketProvider marketProvider;
+  final AppearanceProvider appearance;
 
   AppDependencies._({
     required this.auth,
@@ -62,6 +66,7 @@ class AppDependencies {
     required this.session,
     required this.notificationsProvider,
     required this.marketProvider,
+    required this.appearance,
   });
 
   factory AppDependencies.create() {
@@ -85,6 +90,7 @@ class AppDependencies {
       session: SessionProvider(auth),
       notificationsProvider: NotificationsProvider(chat, notifications, LocalNotifications.instance),
       marketProvider: MarketProvider(market),
+      appearance: AppearanceProvider(AppearanceRepositoryImpl(AppearanceLocalDataSource())),
     );
   }
 
@@ -101,6 +107,7 @@ class AppDependencies {
         ChangeNotifierProvider<SessionProvider>.value(value: session),
         ChangeNotifierProvider<NotificationsProvider>.value(value: notificationsProvider),
         ChangeNotifierProvider<MarketProvider>.value(value: marketProvider),
+        ChangeNotifierProvider<AppearanceProvider>.value(value: appearance),
       ];
 
   /// Conecta la sesión con las notificaciones: al entrar empieza a consultar, al salir se detiene.

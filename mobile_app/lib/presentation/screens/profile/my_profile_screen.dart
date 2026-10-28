@@ -32,6 +32,7 @@ class MyProfileScreen extends StatelessWidget {
         link(Icons.edit_outlined, app.isFarmer ? app.tr('Editar mi finca y mis datos', 'Edit my farm & details') : app.tr('Editar mi perfil', 'Edit my profile'),
             () => context.go('/edit-profile')),
         if (app.isFarmer) link(Icons.add_rounded, app.tr('Publicar un lote nuevo', 'Publish a new lot'), () => context.go('/publish')),
+        link(Icons.palette_outlined, app.tr('Apariencia e idioma', 'Appearance & language'), () => context.go('/appearance')),
         link(Icons.attach_money_rounded, app.tr('Comisiones y condiciones', 'Fees & terms'), () => context.go('/fees')),
         link(Icons.trending_up_rounded, app.tr('Precio del café y del dólar', 'Coffee & dollar prices'), () => context.go('/market')),
         link(Icons.gavel_rounded, app.tr('Subastas', 'Auctions'), () => context.go('/auctions')),

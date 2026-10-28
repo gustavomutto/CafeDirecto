@@ -7,6 +7,7 @@ import '../../../domain/entities/user.dart';
 import '../market/market_widgets.dart';
 import '../../providers/app_context.dart';
 import '../../../core/theme/palette.dart';
+import '../../widgets/buyer_type_chips.dart';
 import '../../widgets/common.dart';
 
 const _splashPhoto = 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=900&q=70';
@@ -113,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const p = farmerPalette;
+    final p = context.palFor('farmer');
     return PaletteOverride(
       palette: p,
       child: Scaffold(
@@ -208,7 +209,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const p = farmerPalette;
+    final p = context.palFor('farmer');
     return PaletteOverride(
       palette: p,
       child: Scaffold(
@@ -321,7 +322,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final p = paletteFor(role ?? 'farmer');
+    final p = context.palFor(role ?? 'farmer');
     return PaletteOverride(
       palette: p,
       child: Scaffold(
@@ -369,7 +370,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       Text('Who are you?', style: p.display(size: 24, color: p.ink2, weight: FontWeight.w500)),
       const SizedBox(height: 28),
       card('farmer', '👩🏽‍🌾', 'Soy caficultor', 'Quiero vender mi café', p.primary, p.primaryInk),
-      card('buyer', '☕', "I'm a coffee buyer", 'Roaster, café or importer', Colors.white, buyerPalette.ink),
+      card('buyer', '☕', "I'm a coffee buyer", 'Roaster, café or importer', context.palFor('buyer').surface, context.palFor('buyer').ink),
     ]);
   }
 
@@ -417,6 +418,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Expanded(child: _Field(label: t('País', 'Country'), controller: c['country']!)),
         ]),
         _Field(label: t('Tipo (tostador, cafetería…)', 'Type (roaster, café…)'), controller: c['type']!),
+        BuyerTypeChips(controller: c['type']!, lang: lang),
       ],
       if (_error != null) _ErrorText(_error!),
       const SizedBox(height: 10),

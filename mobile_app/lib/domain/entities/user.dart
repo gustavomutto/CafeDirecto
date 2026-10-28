@@ -27,6 +27,8 @@ class AppUser {
   const AppUser({required this.id, required this.role, required this.name, required this.lang, this.photo, this.email = '', this.phone = ''});
 
   bool get isFarmer => role == 'farmer';
+
+  AppUser withLang(String l) => AppUser(id: id, role: role, name: name, lang: l, photo: photo, email: email, phone: phone);
 }
 
 class FarmProfile {
@@ -110,6 +112,8 @@ class Account {
   final FarmProfile? farm;
   final BuyerProfile? buyer;
   const Account(this.user, {this.farm, this.buyer});
+
+  Account withLang(String l) => Account(user.withLang(l), farm: farm, buyer: buyer);
 }
 
 /// Datos para crear una cuenta.

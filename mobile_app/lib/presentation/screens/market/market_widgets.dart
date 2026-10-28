@@ -34,7 +34,7 @@ class _MarketRateBadgeState extends State<MarketRateBadge> {
     final white = p.text(size: 13, weight: FontWeight.w900, color: Colors.white);
     final dim = p.text(size: 10, color: Colors.white70);
     return Material(
-      color: const Color(0xE61C1410),
+      color: p.dark ? p.surface2 : const Color(0xE61C1410),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),

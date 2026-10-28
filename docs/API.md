@@ -6,6 +6,8 @@ Base: `https://cafedirecto-production.up.railway.app` · JSON en UTF-8 · versi�
   Las rutas marcadas con 🔓 no lo necesitan.
 - **Errores:** `{ "error": "mensaje para mostrar" }` con código 400 (dato inválido), 401 (sin sesión),
   403 (sin permiso), 404, 409 (duplicado), 429 (demasiados intentos; trae `Retry-After`) o 500.
+- **Idioma de los errores:** con `Accept-Language: en` el mensaje llega en inglés (`es` → español). Si la cabecera
+  no dice `es` ni `en`, se usa el idioma guardado del usuario. Las traducciones están en `server/src/lib/i18n.js`.
 - **Fechas:** milisegundos desde 1970 (`createdAt`, `endsAt`…).
 - **Textos bilingües:** `{ "es": "…", "en": "…" }`.
 - **Fotos:** las direcciones llegan firmadas (`/images/12?s=FIRMA`); se usan tal cual.

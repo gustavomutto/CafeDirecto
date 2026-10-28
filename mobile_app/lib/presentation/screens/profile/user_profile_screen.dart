@@ -48,7 +48,7 @@ Future<void> _openChat(BuildContext context, int otherUserId, {int? lotId}) asyn
   }
 }
 
-class _FarmView extends StatefulWidget {
+class _FarmView extends StatelessWidget {
   final _ProfileData data;
   final bool own;
   final Widget? extra;
@@ -56,31 +56,24 @@ class _FarmView extends StatefulWidget {
   const _FarmView({required this.data, required this.own, this.extra, required this.reload});
 
   @override
-  State<_FarmView> createState() => _FarmViewState();
-}
-
-class _FarmViewState extends State<_FarmView> {
-  String? cLang;
-
-  @override
   Widget build(BuildContext context) {
     final app = context.app;
     final p = context.pal;
-    final farm = widget.data.farm!;
-    final lots = widget.data.lots;
-    final l = cLang ?? app.lang;
+    final farm = data.farm!;
+    final lots = data.lots;
+    final l = app.lang;
     String t(String es, String en) => l == 'es' ? es : en;
     final rating = farm.rating;
 
     return Scaffold(
       backgroundColor: p.bg,
       body: RefreshIndicator(
-        onRefresh: widget.reload,
+        onRefresh: reload,
         child: CustomScrollView(physics: const AlwaysScrollableScrollPhysics(), slivers: [
           SliverToBoxAdapter(
             child: ProfileCover(
               cover: farm.cover,
-              showBack: !widget.own,
+              showBack: !own,
               avatar: Avatar(src: farm.producerPhoto, name: farm.producer, size: 88, ring: true),
               badge: farm.sca > 0 ? ScoreBadge(sca: farm.sca) : null,
             ),
@@ -95,7 +88,7 @@ class _FarmViewState extends State<_FarmView> {
                     style: p.muted()),
                 const SizedBox(height: 6),
                 Stars(value: rating.avg, size: 16, showValue: rating.count > 0, count: rating.count),
-                LangToggle(label: t('Ver perfil en', 'View profile in'), value: l, onChanged: (v) => setState(() => cLang = v)),
+                LangToggle(label: t('Idioma de la app', 'App language'), value: l, onChanged: context.session.setLang),
                 if (!farm.quote.isEmpty) ...[
                   const SizedBox(height: 14),
                   Container(
@@ -145,13 +138,13 @@ class _FarmViewState extends State<_FarmView> {
                 for (final lot in lots) LotCard(lot: lot, compact: true),
                 SectionTitle('${t('Reputación', 'Reputation')} · ${rating.count > 0 ? '${rating.avg.toStringAsFixed(1)} ★' : t('sin calificaciones', 'no ratings yet')}'),
                 for (final r in farm.reviews) ReviewTile(review: r, lang: l),
-                if (widget.extra != null) widget.extra!,
+                if (extra != null) extra!,
               ]),
             ),
           ),
         ]),
       ),
-      bottomNavigationBar: (!app.isFarmer && !widget.own)
+      bottomNavigationBar: (!app.isFarmer && !own)
           ? ScreenFooter(children: [
               Expanded(
                 child: Btn('${app.tr('Escribir a', 'Message')} ${firstName(farm.producer)}',
@@ -164,7 +157,7 @@ class _FarmViewState extends State<_FarmView> {
   }
 }
 
-class _BuyerView extends StatefulWidget {
+class _BuyerView extends StatelessWidget {
   final _ProfileData data;
   final bool own;
   final Widget? extra;
@@ -172,30 +165,23 @@ class _BuyerView extends StatefulWidget {
   const _BuyerView({required this.data, required this.own, this.extra, required this.reload});
 
   @override
-  State<_BuyerView> createState() => _BuyerViewState();
-}
-
-class _BuyerViewState extends State<_BuyerView> {
-  String? cLang;
-
-  @override
   Widget build(BuildContext context) {
     final app = context.app;
     final p = context.pal;
-    final b = widget.data.buyer!;
-    final l = cLang ?? app.lang;
+    final b = data.buyer!;
+    final l = app.lang;
     String t(String es, String en) => l == 'es' ? es : en;
     final rating = b.rating;
 
     return Scaffold(
       backgroundColor: p.bg,
       body: RefreshIndicator(
-        onRefresh: widget.reload,
+        onRefresh: reload,
         child: CustomScrollView(physics: const AlwaysScrollableScrollPhysics(), slivers: [
           SliverToBoxAdapter(
             child: ProfileCover(
               cover: b.cover,
-              showBack: !widget.own,
+              showBack: !own,
               avatar: Avatar(src: b.contactPhoto, name: b.contact, size: 88, ring: true),
             ),
           ),
@@ -205,18 +191,18 @@ class _BuyerViewState extends State<_BuyerView> {
               delegate: SliverChildListDelegate([
                 Text(b.displayName, style: p.display(size: 28)),
                 const SizedBox(height: 2),
-                Text([b.contact, b.type].where((s) => s.isNotEmpty).join(' · '), style: p.muted()),
+                Text([b.contact, buyerTypeLabel(b.type, l)].where((s) => s.isNotEmpty).join(' · '), style: p.muted()),
                 const SizedBox(height: 8),
                 Wrap(spacing: 10, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
                   VerifiedBadge(label: t('Cuenta verificada por correo', 'Email-verified account')),
                   Stars(value: rating.avg, size: 15, showValue: rating.count > 0, count: rating.count),
                 ]),
-                LangToggle(label: t('Ver perfil en', 'View profile in'), value: l, onChanged: (v) => setState(() => cLang = v)),
+                LangToggle(label: t('Idioma de la app', 'App language'), value: l, onChanged: context.session.setLang),
                 const SizedBox(height: 10),
                 SpecGrid([
                   if (b.city.isNotEmpty || b.country.isNotEmpty)
                     Spec(Icons.place_outlined, t('Ciudad', 'City'), [b.city, b.country].where((s) => s.isNotEmpty).join(', ')),
-                  if (b.type.isNotEmpty) Spec(Icons.person_outline_rounded, t('Tipo de comprador', 'Buyer type'), b.type),
+                  if (b.type.isNotEmpty) Spec(Icons.person_outline_rounded, t('Tipo de comprador', 'Buyer type'), buyerTypeLabel(b.type, l)),
                   if (b.volume.isNotEmpty) Spec(Icons.inventory_2_outlined, t('Volumen de compra', 'Purchase volume'), b.volume),
                   if (b.since != null) Spec(Icons.schedule_rounded, t('Comprando desde', 'Buying since'), '${b.since}'),
                 ]),
@@ -230,13 +216,13 @@ class _BuyerViewState extends State<_BuyerView> {
                 ],
                 SectionTitle('${t('Reputación', 'Reputation')} · ${rating.count > 0 ? '${rating.avg.toStringAsFixed(1)} ★' : t('sin calificaciones', 'no ratings yet')}'),
                 for (final r in b.reviews) ReviewTile(review: r, lang: l),
-                if (widget.extra != null) widget.extra!,
+                if (extra != null) extra!,
               ]),
             ),
           ),
         ]),
       ),
-      bottomNavigationBar: (app.isFarmer && !widget.own)
+      bottomNavigationBar: (app.isFarmer && !own)
           ? ScreenFooter(children: [
               Expanded(
                 child: Btn('${app.tr('Escribir a', 'Message')} ${firstName(b.contact)}',

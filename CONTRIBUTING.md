@@ -28,7 +28,7 @@ Flujo recomendado:
 cd server
 npm install
 npm run lint            # estilo y errores comunes
-npm test                # 135 pruebas de la API (necesita PostgreSQL; ver README)
+npm test                # 148 pruebas de la API (necesita PostgreSQL; ver README)
 
 # App
 cd mobile_app
@@ -66,6 +66,7 @@ Para que el equipo y los usuarios de prueba descarguen el APK con el enlace fijo
 - Las pantallas **no** llaman HTTP: usan un repositorio (`context.repo<LotRepository>()`) o un provider.
 - El JSON del servidor se convierte en entidades con un **DTO** en `lib/data/dtos/`.
 - Todo texto visible va en los dos idiomas: `app.tr('Español', 'English')`.
+- Colores siempre desde `context.pal` (nunca `Colors.white` o `Color(0x…)` sobre fondos de la app): así funcionan los modos neutro y oscuro.
 - Usa `AppLogger` en lugar de `print`.
 - Lógica nueva con estado → un `ChangeNotifier` en `presentation/providers/` con su prueba en `test/`.
 
@@ -73,6 +74,7 @@ Para que el equipo y los usuarios de prueba descarguen el APK con el enlace fijo
 
 - Rutas en `src/routes/`, reglas de negocio en `src/services/`, JSON de salida en `src/serialize.js`.
 - Todo dato que llega se valida (`inRange`, `str`, `optId`…) y toda foto que se usa debe ser de quien la usa (`assertOwnImages`).
+- Mensaje de error nuevo → agrega su versión en inglés en `src/lib/i18n.js` (la prueba `test/v4.test.mjs` lo exige).
 - Consultas siempre con parámetros (`$1, $2…`), nunca concatenando texto.
 - Cambios de la base: agregar al final de `src/schema.sql` de forma idempotente (`IF NOT EXISTS`) y actualizar el diccionario de datos.
 

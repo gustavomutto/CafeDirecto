@@ -16,6 +16,7 @@ import '../presentation/screens/notifications/notifications_screen.dart';
 import '../presentation/screens/orders/order_detail_screen.dart';
 import '../presentation/screens/orders/rate_agreement_screen.dart';
 import '../presentation/screens/profile/edit_profile_screen.dart';
+import '../presentation/screens/profile/appearance_screen.dart';
 import '../presentation/screens/profile/privacy_screen.dart';
 import '../presentation/screens/profile/user_profile_screen.dart';
 
@@ -41,6 +42,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     'notifications' => const NotificationsScreen(),
     'edit-profile' => const EditProfileScreen(),
     'privacy' => const PrivacyScreen(),
+    'appearance' => const AppearanceScreen(),
     _ => const RootGate(),
   };
   return MaterialPageRoute(settings: settings, builder: (_) => page);

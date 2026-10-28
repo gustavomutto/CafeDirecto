@@ -56,7 +56,7 @@ class MessageBubble extends StatelessWidget {
           if (msg.pending)
             Icon(Icons.schedule_rounded, size: 12, color: p.warm)
           else
-            Icon(Icons.done_all_rounded, size: 14, color: msg.type == 'quote' ? p.accent : const Color(0xFF8FD3A8)),
+            Icon(Icons.done_all_rounded, size: 14, color: (msg.type == 'quote' || p.dark) ? p.accent : const Color(0xFF8FD3A8)),
         ],
       ]),
     );
@@ -148,7 +148,7 @@ class _TranslationBlock extends StatelessWidget {
     }
     final forMe = from != lang;
     final ink = mine ? p.primaryInk : p.ink;
-    final bg = mine ? Colors.white.withValues(alpha: 0.12) : (forMe ? p.accentSoft : p.surface2);
+    final bg = mine ? ink.withValues(alpha: 0.12) : (forMe ? p.accentSoft : p.surface2);
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.fromLTRB(10, 7, 10, 8),
