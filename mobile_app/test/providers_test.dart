@@ -1,4 +1,5 @@
 // Pruebas de la capa de presentación (providers) con repositorios falsos.
+import 'package:cafedirecto/domain/entities/entities.dart';
 import 'package:cafedirecto/presentation/providers/chat_room_controller.dart';
 import 'package:cafedirecto/presentation/providers/notifications_provider.dart';
 import 'package:cafedirecto/presentation/providers/session_provider.dart';
