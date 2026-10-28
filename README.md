@@ -24,7 +24,7 @@ Servidor en producción: <https://cafedirecto-production.up.railway.app> · [Pol
 | [`server/`](server) | API Node.js + Express + PostgreSQL, desplegada en Railway |
 | [`docs/`](docs) | Arquitectura, API, auditoría, publicación en Google Play, diccionario de datos y documentos del proyecto |
 | [`demos/`](demos) | Prototipos anteriores sin servidor (React y Flutter) |
-| `.github/` | GitHub Actions (CI), Dependabot y plantilla de pull request |
+| `.github/` | GitHub Actions (CI) y plantilla de pull request |
 
 ## Empezar
 
