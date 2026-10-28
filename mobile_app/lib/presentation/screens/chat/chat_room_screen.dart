@@ -1,8 +1,6 @@
 // Chat directo entre caficultor y comprador reales, con traducción automática (servidor),
 // dictado por voz, fotos, frases rápidas y cotizaciones — RF-09 a RF-17.
 // Los mensajes nuevos se consultan cada 3 segundos.
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -14,6 +12,7 @@ import '../../../domain/repositories/agreement_repository.dart';
 import '../../../domain/repositories/chat_repository.dart';
 import '../../../domain/repositories/lot_repository.dart';
 import '../../providers/app_context.dart';
+import '../../providers/chat_room_controller.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../../core/utils/format.dart';
@@ -22,177 +21,96 @@ import '../../widgets/message_bubble.dart';
 import '../../widgets/photo_picker.dart';
 import '../../widgets/quote_card.dart';
 
-class ChatRoomScreen extends StatefulWidget {
+class ChatRoomScreen extends StatelessWidget {
   final int convId;
   const ChatRoomScreen({super.key, required this.convId});
 
   @override
-  State<ChatRoomScreen> createState() => _ChatRoomScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (ctx) {
+        final session = ctx.read<SessionProvider>();
+        final counters = ctx.read<NotificationsProvider>();
+        return ChatRoomController(
+          chat: ctx.read<ChatRepository>(),
+          agreements: ctx.read<AgreementRepository>(),
+          lots: ctx.read<LotRepository>(),
+          convId: convId,
+          myUserId: session.user!.id,
+          myRole: session.role,
+          lang: session.lang,
+          isForeground: () => counters.foreground,
+          onRead: counters.refresh,
+        )..start();
+      },
+      child: const _ChatRoomView(),
+    );
+  }
 }
 
-class _ChatRoomScreenState extends State<ChatRoomScreen> {
+class _ChatRoomView extends StatefulWidget {
+  const _ChatRoomView();
+
+  @override
+  State<_ChatRoomView> createState() => _ChatRoomViewState();
+}
+
+class _ChatRoomViewState extends State<_ChatRoomView> {
   final _text = TextEditingController();
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _listening = false;
   bool _viaVoice = false;
 
-  Conversation? _conv;
-  List<ChatMessage> _messages = [];
-  final Map<int, Agreement> _agreements = {};
-  Object? _error;
-  Timer? _timer;
-  bool _sending = false;
-  bool _polling = false;
-  int _tempId = -1;
-
   late SessionProvider app;
-  late ChatRepository _chat;
-  late AgreementRepository _agreementsRepo;
-  late LotRepository _lots;
-  late NotificationsProvider _counters;
-
-  int get _lastId => _messages.where((m) => m.id > 0).fold(0, (a, m) => m.id > a ? m.id : a);
+  late ChatRoomController _ctrl;
 
   @override
   void initState() {
     super.initState();
     _text.addListener(() => setState(() {}));
-    WidgetsBinding.instance.addPostFrameCallback((_) => _init());
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     app = context.session;
-    _chat = context.repo<ChatRepository>();
-    _agreementsRepo = context.repo<AgreementRepository>();
-    _lots = context.repo<LotRepository>();
-    _counters = context.read<NotificationsProvider>();
+    _ctrl = context.read<ChatRoomController>();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _speech.cancel();
     _text.dispose();
     super.dispose();
   }
 
-  Future<void> _init() async {
-    try {
-      final c = await _chat.conversation(widget.convId);
-      if (!mounted) return;
-      setState(() => _conv = c);
-      await _reloadAll();
-      _timer = Timer.periodic(const Duration(seconds: 3), (_) => _poll());
-    } catch (e) {
-      if (mounted) setState(() => _error = e);
-    }
-  }
-
-  /// Vuelve a traer todos los mensajes (cuando cambian cotizaciones o estados).
-  Future<void> _reloadAll() async {
-    final list = await _chat.messages(widget.convId);
-    if (!mounted) return;
-    setState(() => _messages = [...list, ..._messages.where((m) => m.pending)]);
-    await _loadAgreements(refresh: true);
-    _markRead();
-  }
-
-  Future<void> _poll() async {
-    // Con la app en segundo plano no se consulta; al volver, el siguiente ciclo se pone al día.
-    if (_polling || !mounted || !_counters.foreground) return;
-    _polling = true;
-    try {
-      final list = await _chat.messages(widget.convId, after: _lastId);
-      if (list.isEmpty || !mounted) return;
-      // Si llegó algo que cambia cotizaciones o acuerdos, se recarga todo para ver los estados nuevos.
-      if (list.any((m) => m.type != 'text' && m.type != 'photo')) {
-        await _reloadAll();
-      } else {
-        setState(() => _messages = [..._messages.where((m) => !m.pending), ...list, ..._messages.where((m) => m.pending)]);
-        _markRead();
-      }
-    } catch (_) {
-      // sin conexión momentánea: se reintenta en el siguiente ciclo
-    } finally {
-      _polling = false;
-    }
-  }
-
-  Future<void> _loadAgreements({bool refresh = false}) async {
-    final ids = _messages.where((m) => m.type == 'agreement' && m.agreementId != null).map((m) => m.agreementId!).toSet();
-    for (final id in ids) {
-      if (!refresh && _agreements.containsKey(id)) continue;
-      try {
-        final a = await _agreementsRepo.get(id);
-        if (mounted) setState(() => _agreements[id] = a);
-      } catch (_) {}
-    }
-  }
-
-  Future<void> _markRead() async {
-    try {
-      await _chat.markRead(widget.convId, _lastId);
-      _counters.refresh();
-    } catch (_) {}
-  }
-
   // ── Envíos ────────────────────────────────────────────────────
   Future<void> _sendText([String? override]) async {
     final t = (override ?? _text.text).trim();
-    if (t.isEmpty || _sending) return;
+    if (t.isEmpty) return;
     final voice = override == null && _viaVoice;
     if (_listening) await _speech.stop();
-    final temp = ChatMessage(
-      id: _tempId--,
-      conversationId: widget.convId,
-      senderId: app.user!.id,
-      from: app.role,
-      type: 'text',
-      text: t,
-      lang: app.lang,
-      viaVoice: voice,
-      createdAt: nowMs(),
-      pending: true,
-    );
     if (override == null) _text.clear();
-    setState(() {
-      _viaVoice = false;
-      _messages = [..._messages, temp];
-    });
+    setState(() => _viaVoice = false);
     try {
-      final m = await _chat.sendText(widget.convId, t, lang: app.lang, viaVoice: voice);
-      if (!mounted) return;
-      setState(() => _messages = [..._messages.where((x) => x.id != temp.id && x.id != m.id), m]..sort((a, b) => _order(a, b)));
+      await _ctrl.sendText(t, viaVoice: voice);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _messages = _messages.where((x) => x.id != temp.id).toList());
       if (override == null) _text.text = t;
       app.showError(e);
     }
   }
 
-  int _order(ChatMessage a, ChatMessage b) {
-    if (a.pending != b.pending) return a.pending ? 1 : -1;
-    return a.id.compareTo(b.id);
-  }
-
   Future<void> _sendPhoto() async {
     final file = await chooseImage(context);
-    if (file == null) return;
-    setState(() => _sending = true);
+    if (file == null || !mounted) return;
     try {
-      if (!mounted) return;
       final id = await uploadImage(context, file);
       if (id == null) return;
-      await _chat.sendPhoto(widget.convId, id, text: _text.text.trim(), lang: app.lang);
+      await _ctrl.sendPhoto(id, text: _text.text.trim());
       _text.clear();
-      await _poll();
     } catch (e) {
       app.showError(e);
-    } finally {
-      if (mounted) setState(() => _sending = false);
     }
   }
 
@@ -237,21 +155,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   // ── Cotizaciones ──────────────────────────────────────────────
   Future<void> _quoteAction(ChatMessage m, String action, {double? priceLb, int? sacks}) async {
     try {
-      await _chat.quoteAction(m.id, action, priceLb: priceLb, sacks: sacks);
-      await _reloadAll();
+      await _ctrl.quoteAction(m, action, priceLb: priceLb, sacks: sacks);
       if (action == 'confirm') app.showToast(app.tr('¡Acuerdo registrado!', 'Agreement registered!'), '🤝');
       app.touch();
     } catch (e) {
       app.showError(e);
-      _reloadAll();
     }
   }
 
   Future<void> _openQuote() async {
-    final c = _conv!;
+    final c = _ctrl.conversation!;
     List<Lot> lots;
     try {
-      lots = (await _lots.byFarmer(c.farmerId)).where((l) => l.sacks > 0).toList();
+      lots = await _ctrl.lotsWithStock();
     } catch (e) {
       app.showError(e);
       return;
@@ -322,8 +238,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       footer: (ctx, _) => Btn(app.tr('Enviar cotización', 'Send quote'), icon: Icons.send_rounded, large: true, block: true, onPressed: () async {
         Navigator.of(ctx).pop();
         try {
-          await _chat.sendQuote(widget.convId, lotId: lotId, priceLb: price, sacks: sacks, incoterm: incoterm);
-          await _reloadAll();
+          await _ctrl.sendQuote(lotId: lotId, priceLb: price, sacks: sacks, incoterm: incoterm);
         } catch (e) {
           app.showError(e);
         }
@@ -409,7 +324,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   Widget build(BuildContext context) {
     final app = context.app;
     final p = context.pal;
-    final conv = _conv;
+    final ctrl = context.watch<ChatRoomController>();
+    final conv = ctrl.conversation;
 
     if (conv == null) {
       return Scaffold(
@@ -417,7 +333,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         body: SafeArea(
           child: Column(children: [
             TopBar(title: app.tr('Chat', 'Chat')),
-            Expanded(child: _error != null ? ErrorRetry(error: _error!, onRetry: () { setState(() => _error = null); _init(); }) : const LoadingView()),
+            Expanded(child: ctrl.error != null ? ErrorRetry(error: ctrl.error!, onRetry: ctrl.start) : const LoadingView()),
           ]),
         ),
       );
@@ -435,12 +351,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
 
     final items = [
-      for (final m in _messages.reversed)
+      for (final m in ctrl.messages.reversed)
         MessageBubble(
           key: ValueKey(m.id),
           msg: m,
           handlers: handlers,
-          agreement: m.agreementId == null ? null : _agreements[m.agreementId],
+          agreement: m.agreementId == null ? null : ctrl.agreements[m.agreementId],
           onOpenPhoto: () => _openPhoto(m.photo),
         ),
     ];
@@ -530,7 +446,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     const SizedBox(width: 8),
                     quickBtn(Icons.notes_rounded, app.tr('Frases', 'Phrases'), _openTemplates),
                     const SizedBox(width: 8),
-                    quickBtn(Icons.photo_camera_outlined, app.tr('Foto', 'Photo'), _sending ? null : _sendPhoto),
+                    quickBtn(Icons.photo_camera_outlined, app.tr('Foto', 'Photo'), ctrl.sendingPhoto ? null : _sendPhoto),
                   ])
                 : SizedBox(
                     height: 40,
@@ -563,7 +479,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             padding: const EdgeInsets.fromLTRB(6, 8, 10, 8),
             child: Row(children: [
               if (!isFarmer) ...[
-                IconButton(onPressed: _sending ? null : _sendPhoto, icon: Icon(Icons.image_outlined, color: p.ink2)),
+                IconButton(onPressed: ctrl.sendingPhoto ? null : _sendPhoto, icon: Icon(Icons.image_outlined, color: p.ink2)),
                 IconButton(onPressed: _openTemplates, icon: Icon(Icons.notes_rounded, color: p.ink2)),
               ] else
                 const SizedBox(width: 4),

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Evita que la reducción de recursos (R8) borre el ícono de los avisos: se usa por nombre desde Dart. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_notification" />

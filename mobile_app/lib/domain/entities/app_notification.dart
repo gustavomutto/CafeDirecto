@@ -44,5 +44,8 @@ class NotificationPage {
 
 class UnreadCounts {
   final int messages, notifications;
-  const UnreadCounts(this.messages, this.notifications);
+
+  /// Id del aviso más reciente: si no cambió, no hay nada nuevo que mostrar en el teléfono.
+  final int latestNotificationId;
+  const UnreadCounts(this.messages, this.notifications, [this.latestNotificationId = 0]);
 }

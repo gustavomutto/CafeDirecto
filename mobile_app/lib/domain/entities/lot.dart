@@ -1,4 +1,5 @@
 // Lotes de café publicados por los caficultores.
+import '../../core/utils/media.dart';
 import 'user.dart';
 
 class LotFarm {
@@ -83,8 +84,8 @@ class Lot {
     this.interest,
   });
 
-  /// Id de la foto (las URLs son '/images/ID').
-  int? get photoId => photo == null ? null : int.tryParse(photo!.split('/').last);
+  /// Id de la foto (las direcciones son '/images/ID?s=FIRMA').
+  int? get photoId => imageIdFromUrl(photo);
 }
 
 /// Datos para publicar o editar un lote.

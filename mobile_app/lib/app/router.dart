@@ -16,6 +16,7 @@ import '../presentation/screens/notifications/notifications_screen.dart';
 import '../presentation/screens/orders/order_detail_screen.dart';
 import '../presentation/screens/orders/rate_agreement_screen.dart';
 import '../presentation/screens/profile/edit_profile_screen.dart';
+import '../presentation/screens/profile/privacy_screen.dart';
 import '../presentation/screens/profile/user_profile_screen.dart';
 
 int _id(List<String> segs, [int i = 1]) => segs.length > i ? int.tryParse(segs[i]) ?? -1 : -1;
@@ -39,6 +40,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     'auction' => AuctionDetailScreen(auctionId: _id(segs)),
     'notifications' => const NotificationsScreen(),
     'edit-profile' => const EditProfileScreen(),
+    'privacy' => const PrivacyScreen(),
     _ => const RootGate(),
   };
   return MaterialPageRoute(settings: settings, builder: (_) => page);

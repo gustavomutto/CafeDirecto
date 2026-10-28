@@ -4,12 +4,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/catalog.dart';
+import '../../../core/utils/media.dart';
 import '../../../domain/entities/user.dart';
 import '../../providers/app_context.dart';
 import '../../widgets/common.dart';
 import '../../widgets/photo_picker.dart';
 
-int? _idFromUrl(String? url) => url == null ? null : int.tryParse(url.split('/').last);
+int? _idFromUrl(String? url) => imageIdFromUrl(url);
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
