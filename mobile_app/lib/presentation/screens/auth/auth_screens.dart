@@ -1,7 +1,6 @@
 // Bienvenida, inicio de sesión y registro de usuarios reales (RF-01).
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/catalog.dart';
 import '../../../core/utils/validators.dart';
 import '../../../domain/entities/user.dart';
 import '../market/market_widgets.dart';
@@ -275,7 +274,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     for (final k in ['name', 'email', 'password', 'phone', 'farmName', 'municipality', 'company', 'city', 'country', 'type'])
       k: TextEditingController(),
   };
-  String region = regions.first;
+  String? region;
   bool _busy = false;
   String? _error;
 
@@ -303,7 +302,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       password: c['password']!.text,
       phone: c['phone']!.text.trim(),
       farmName: c['farmName']!.text.trim(),
-      region: region,
+      region: region ?? context.regions.first,
       municipality: c['municipality']!.text.trim(),
       company: c['company']!.text.trim(),
       city: c['city']!.text.trim(),
@@ -404,8 +403,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Text(t('Departamento', 'Region'), style: p.text(size: p.fs - 2, weight: FontWeight.w700)),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          initialValue: region,
-          items: [for (final r in regions) DropdownMenuItem(value: r, child: Text(r, style: p.text()))],
+          initialValue: region ?? context.regions.first,
+          items: [for (final r in context.regions) DropdownMenuItem(value: r, child: Text(r, style: p.text()))],
           onChanged: (v) => setState(() => region = v ?? region),
         ),
         const SizedBox(height: 14),

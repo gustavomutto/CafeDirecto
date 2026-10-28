@@ -44,4 +44,9 @@ r=await api('/me',{token:tok,method:'PUT',body:{lang:'es'}}); check(r.s===200&&r
 r=await api('/lots',{token:tok,method:'POST',body:{variety:'Caturra',process:'lavado',sacks:1,sca:86,priceLb:5}});
 check(r.j.error==='Solo los caficultores publican lotes','old app: Spanish from user language');
 
+// 4) Catálogo de regiones (la app lo descarga al abrir)
+const { regions } = require('../src/lib/catalog.js');
+r=await api('/catalog'); check(r.s===200&&r.j.regions.includes('Cesar')&&r.j.regions.includes('Huila'),'catalog has Cesar');
+check(regions('Antioquia, cesar ,,Caldas').join('|')===regions('').join('|')+'|Antioquia|Caldas','REGIONS adds without duplicates');
+
 console.log('ok',ok,'fail',fail); process.exitCode = fail ? 1 : 0;

@@ -11,6 +11,7 @@ import '../data/datasources/local/session_local_datasource.dart';
 import '../data/datasources/remote/account_remote_datasource.dart';
 import '../data/datasources/remote/agreement_remote_datasource.dart';
 import '../data/datasources/remote/auction_remote_datasource.dart';
+import '../data/datasources/remote/catalog_remote_datasource.dart';
 import '../data/datasources/remote/chat_remote_datasource.dart';
 import '../data/datasources/remote/exchange_rate_remote_datasource.dart';
 import '../data/datasources/remote/lot_remote_datasource.dart';
@@ -21,6 +22,7 @@ import '../data/repositories/agreement_repository_impl.dart';
 import '../data/repositories/appearance_repository_impl.dart';
 import '../data/repositories/auction_repository_impl.dart';
 import '../data/repositories/auth_repository_impl.dart';
+import '../data/repositories/catalog_repository_impl.dart';
 import '../data/repositories/chat_repository_impl.dart';
 import '../data/repositories/lot_repository_impl.dart';
 import '../data/repositories/market_repository_impl.dart';
@@ -35,6 +37,7 @@ import '../domain/repositories/market_repository.dart';
 import '../domain/repositories/media_repository.dart';
 import '../domain/repositories/notification_repository.dart';
 import '../presentation/providers/appearance_provider.dart';
+import '../presentation/providers/catalog_provider.dart';
 import '../presentation/providers/market_provider.dart';
 import '../presentation/providers/notifications_provider.dart';
 import '../presentation/providers/session_provider.dart';
@@ -53,6 +56,7 @@ class AppDependencies {
   final NotificationsProvider notificationsProvider;
   final MarketProvider marketProvider;
   final AppearanceProvider appearance;
+  final CatalogProvider catalog;
 
   AppDependencies._({
     required this.auth,
@@ -67,6 +71,7 @@ class AppDependencies {
     required this.notificationsProvider,
     required this.marketProvider,
     required this.appearance,
+    required this.catalog,
   });
 
   factory AppDependencies.create() {
@@ -91,6 +96,7 @@ class AppDependencies {
       notificationsProvider: NotificationsProvider(chat, notifications, LocalNotifications.instance),
       marketProvider: MarketProvider(market),
       appearance: AppearanceProvider(AppearanceRepositoryImpl(AppearanceLocalDataSource())),
+      catalog: CatalogProvider(CatalogRepositoryImpl(CatalogRemoteDataSource(api))),
     );
   }
 
@@ -108,6 +114,7 @@ class AppDependencies {
         ChangeNotifierProvider<NotificationsProvider>.value(value: notificationsProvider),
         ChangeNotifierProvider<MarketProvider>.value(value: marketProvider),
         ChangeNotifierProvider<AppearanceProvider>.value(value: appearance),
+        ChangeNotifierProvider<CatalogProvider>.value(value: catalog),
       ];
 
   /// Conecta la sesión con las notificaciones: al entrar empieza a consultar, al salir se detiene.

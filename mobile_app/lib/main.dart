@@ -6,6 +6,8 @@
 //   data/          DTOs (JSON ⇄ entidades), fuentes de datos (API, teléfono) e implementación de repositorios
 //   presentation/  providers (estado), pantallas y widgets
 //   app/           inyección de dependencias, rutas y el widget principal
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -37,6 +39,7 @@ Future<void> main() async {
   final deps = AppDependencies.create();
   await deps.appearance.load(); // antes del primer cuadro, para no parpadear de claro a oscuro
   await deps.session.restore();
+  unawaited(deps.catalog.load()); // regiones del servidor, sin hacer esperar el arranque
   deps.wireSession();
   AppLogger.i('App iniciada · sesión: ${deps.session.loggedIn ? deps.session.user!.email : 'ninguna'}');
 

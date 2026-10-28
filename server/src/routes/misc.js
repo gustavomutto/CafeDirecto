@@ -7,6 +7,7 @@ const { translate, providerName } = require('../translate');
 const { limit } = require('../ratelimit');
 const { h, str, otherLang, MIN } = require('../lib/http');
 const { privacyHtml } = require('../lib/privacy');
+const { regions } = require('../lib/catalog');
 
 const r = express.Router();
 
@@ -17,6 +18,12 @@ r.get(['/privacy', '/privacidad'], (req, res) => {
   res.set('Cache-Control', 'public, max-age=3600');
   res.type('html').send(privacyHtml());
 });
+// Catálogos para la app (regiones cafeteras). Público y con caché corta: un cambio se ve en minutos.
+r.get('/catalog', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300');
+  res.json({ regions: regions() });
+});
+
 r.get('/health', h(async (req, res) => {
   await q('SELECT 1');
   res.json({ ok: true });

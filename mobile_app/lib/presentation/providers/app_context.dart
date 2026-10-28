@@ -9,7 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/palette.dart';
+import '../../core/constants/catalog.dart' as fallback;
 import 'appearance_provider.dart';
+import 'catalog_provider.dart';
 import 'session_provider.dart';
 
 extension AppContextX on BuildContext {
@@ -37,6 +39,9 @@ extension AppContextX on BuildContext {
     final a = Provider.of<AppearanceProvider?>(this, listen: _listen);
     return a?.paletteFor(role) ?? paletteFor(role);
   }
+
+  /// Regiones cafeteras (del servidor; si no hay, las que trae la app).
+  List<String> get regions => Provider.of<CatalogProvider?>(this, listen: _listen)?.regions ?? fallback.regions;
 
   /// Preferencias de apariencia: dentro de build escucha, en callbacks solo lee.
   AppearanceProvider get appearance => Provider.of<AppearanceProvider>(this, listen: _listen);
