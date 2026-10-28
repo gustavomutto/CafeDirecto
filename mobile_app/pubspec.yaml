@@ -21,7 +21,7 @@ dependencies:
   # Dictado por voz (reconocimiento de voz del teléfono)
   speech_to_text: ^7.0.0
   # Tipografías Fraunces, Nunito e Inter
-  google_fonts: ^6.1.0
+  google_fonts: ^9.0.0
   # Manejo de estado (capa de presentación)
   provider: ^6.1.2
   # Avisos en el teléfono cuando llega una notificación
