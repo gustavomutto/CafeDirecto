@@ -1,7 +1,7 @@
 name: cafedirecto
 description: "CaféDirecto · conecta caficultores colombianos con compradores de café de especialidad."
 publish_to: 'none'
-version: 2.1.0+3
+version: 3.0.0+4
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -20,6 +20,10 @@ dependencies:
   speech_to_text: ^7.0.0
   # Tipografías Fraunces, Nunito e Inter
   google_fonts: ^6.1.0
+  # Manejo de estado (capa de presentación)
+  provider: ^6.1.2
+  # Avisos en el teléfono cuando llega una notificación
+  flutter_local_notifications: ^22.3.3
 
 dev_dependencies:
   flutter_test:
