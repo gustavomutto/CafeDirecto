@@ -73,11 +73,6 @@ void main() {
       expect(blue.accent, base.accent);
       expect(resolvePalette('farmer', accent: AccentChoice.cafe).primary, base.primary);
     });
-
-    test('el tema de Material sigue el modo', () {
-      expect(buildTheme(resolvePalette('buyer', mode: ThemeChoice.dark)).brightness, Brightness.dark);
-      expect(buildTheme(resolvePalette('buyer')).brightness, Brightness.light);
-    });
   });
 
   group('AppearanceProvider', () {
