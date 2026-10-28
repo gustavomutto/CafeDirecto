@@ -1,53 +1,66 @@
-# CaféDirecto
+# CafeDirecto
+Aplicativo para celular estilo markeplace , para la venta de cafe en granos
 
-Aplicación móvil de demostración para caficultores y compradores de café colombiano. La aplicación principal está desarrollada en **Flutter y Dart** y abre como app nativa; no necesita un navegador ni una WebView. Los datos son locales y de ejemplo, sin backend.
 
-## Ejecutar en un teléfono Android
+| Carpeta | Qué es |
+| --- | --- |
+| `server/` | API en Node.js + Express + PostgreSQL (se despliega en Railway) |
+| `mobile_app/` | App en Flutter para Android y web |
+| `flutter_app/` | Demo Flutter original con datos locales (sin servidor) |
+| `src/`, `index.html` | Demo web original en React (Vite) |
 
-1. Instala Flutter y Android Studio, conecta un teléfono con la depuración USB activada o inicia un emulador.
-2. Desde la carpeta del proyecto:
+Servidor en producción: https://cafedirecto-production.up.railway.app (Railway despliega `server/` desde la rama `gustavo`).
 
-   ```powershell
-   cd flutter_app
-   flutter pub get
-   flutter run
-   ```
+## Correr todo en local
 
-Para generar un APK de depuración e instalarlo manualmente:
+1. Abrir Docker Desktop y crear la base de datos (solo la primera vez):
 
-```powershell
-cd flutter_app
-flutter build apk --debug
+```bash
+docker run -d --name cafedirecto-db -e POSTGRES_USER=cafe -e POSTGRES_PASSWORD=cafe_local -e POSTGRES_DB=cafedirecto -p 127.0.0.1:5432:5432 -v cafedirecto-pgdata:/var/lib/postgresql/data postgres:16-alpine
 ```
 
-El APK queda en `flutter_app/build/app/outputs/flutter-apk/app-debug.apk`.
+Las siguientes veces basta con `docker start cafedirecto-db`.
 
-## Pantallas y funciones
+2. Arrancar la API (puerto 3000). En `server/` ejecutar `npm install` la primera vez y luego `start-local.cmd` (doble clic, o `.\start-local.cmd` en la terminal). Al iniciar crea o actualiza las tablas.
 
-- Onboarding con selección de rol: caficultor o comprador.
-- Inicio del caficultor y catálogo de lotes para compradores, con búsqueda por texto y filtros de región.
-- Detalle del café y de su finca de origen.
-- Bandeja de conversaciones y chat con persistencia local.
-- Acuerdos de ejemplo y detalle de sus condiciones.
-- Publicación de lotes, aprendizaje y perfil.
-- Panel de demostración en el perfil para cambiar de rol, simular desconexión o reiniciar los datos.
+3. Arrancar la app apuntando a la API local:
 
-El estado del onboarding, rol, lotes nuevos y mensajes se guarda en el dispositivo con `shared_preferences`. No hay servicio remoto ni traducción en vivo: la interfaz y los datos incluidos son una demo funcional.
-
-## Organización del código Flutter
-
-```text
-flutter_app/
-├─ lib/
-│  ├─ main.dart          Tema, onboarding y navegación principal
-│  ├─ screens.dart       Pantallas, formularios y widgets reutilizables
-│  ├─ app_state.dart     Estado de la demo y persistencia local
-│  ├─ coffee_data.dart  Fincas, lotes, conversaciones y acuerdos iniciales
-│  └─ models.dart        Modelos de datos
-├─ test/
-└─ android/              Proyecto Android generado por Flutter
+```bash
+cd mobile_app
+flutter run -d chrome --dart-define=API_URL=http://localhost:3000
 ```
 
-## Prototipo web anterior
+En local, los códigos para recuperar la contraseña se muestran en la terminal de la API (no se envían correos).
 
-La carpeta `src/` conserva la versión React + Vite como referencia del prototipo. Para ejecutarla opcionalmente en un navegador, usa `npm install` y `npm run dev` desde la raíz. La app para celular es la que está en `flutter_app/`.
+## Variables del servidor
+
+| Variable | Obligatoria | Para qué |
+| --- | --- | --- |
+| `DATABASE_URL` | Sí | Conexión a PostgreSQL (Railway la da al agregar la base) |
+| `JWT_SECRET` | Sí en producción | Firma las sesiones. Texto aleatorio de 48+ caracteres. Sin ella el servidor no arranca en Railway |
+| `RESEND_API_KEY` | Sí en producción | Envío de correos con [Resend](https://resend.com) (códigos de recuperación de contraseña) |
+| `MAIL_FROM` | Sí en producción | Remitente, por ejemplo `CaféDirecto <no-reply@tudominio.com>` (dominio verificado en Resend) |
+| `DEEPL_API_KEY` o `GOOGLE_TRANSLATE_API_KEY` | No | Traducción de mayor calidad. Sin ellas se usa MyMemory (gratis, con límites) |
+| `MYMEMORY_EMAIL` | No | Sube el límite diario gratuito de MyMemory |
+| `PORT` | No | Puerto (Railway lo define solo) |
+
+## Cambios de la v1.3
+
+- Eliminar cuenta desde el perfil (exigido por Google Play). Pide la contraseña. Se borran perfil, lotes, conversaciones y fotos; si hay acuerdos registrados, se conservan para la otra parte sin datos personales.
+- Recuperar contraseña con un código de 6 dígitos por correo (vence en 15 minutos, máximo 5 intentos). Al cambiarla se cierran las sesiones abiertas en otros dispositivos.
+- `JWT_SECRET` obligatoria en producción.
+- Límite de intentos: inicio de sesión (10 por correo y 50 por IP cada 15 min), registro (10 por hora), recuperación (10 por hora por IP y 3 por correo) y traducción (60 por minuto por usuario).
+- La app deja de consultar el servidor cuando está en segundo plano, y la lista de chats solo se actualiza cuando está a la vista.
+- Pulido: sin textos de "demo", botón de estado del pedido con estilo normal, íconos en lugar de emojis en los formularios, título y colores correctos en la versión web.
+
+## Al desplegar en Railway
+
+1. Agregar `JWT_SECRET`, `RESEND_API_KEY` y `MAIL_FROM` en las variables del servicio antes de desplegar.
+2. Al cambiar `JWT_SECRET`, todas las sesiones abiertas se cierran y los usuarios deben volver a entrar una vez.
+3. Las tablas nuevas se crean solas al arrancar.
+
+## Pendiente antes de publicar en Google Play
+
+- Firma de lanzamiento: crear tu propia clave (keystore) y configurarla en `mobile_app/android/app/build.gradle.kts`. Hoy firma con la clave de depuración.
+- Ícono propio: hoy es el ícono por defecto de Flutter.
+- Política de privacidad publicada en una URL (Google Play la pide, y la app usa el micrófono).

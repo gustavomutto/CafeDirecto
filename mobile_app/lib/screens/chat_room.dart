@@ -89,7 +89,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Future<void> _poll() async {
-    if (_polling || !mounted) return;
+    // Con la app en segundo plano no se consulta; al volver, el siguiente ciclo se pone al día.
+    if (_polling || !mounted || !app.foreground) return;
     _polling = true;
     try {
       final list = ((await app.api.get('/conversations/${widget.convId}/messages', {'after': '$_lastId'})) as List)

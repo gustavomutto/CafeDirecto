@@ -1,4 +1,4 @@
-// Colores y tipografía por rol, igual que en la demo web.
+// Colores y tipografía por rol: cálida para el caficultor, limpia para el comprador.
 // Caficultor: cálido, de origen, botones grandes (Nunito, 17 px).
 // Comprador: limpio, "specialty coffee", fotos protagonistas (Inter, 15 px).
 import 'package:flutter/material.dart';

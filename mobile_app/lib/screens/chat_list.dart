@@ -47,7 +47,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
-    _timer = Timer.periodic(const Duration(seconds: 8), (_) => _load());
+    // Se refresca solo cuando esta pestaña está visible y la app está en pantalla.
+    _timer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (!mounted) return;
+      final app = AppScope.of(context);
+      if (app.foreground && app.tab == 1) _load();
+    });
   }
 
   @override

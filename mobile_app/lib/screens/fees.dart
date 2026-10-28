@@ -141,7 +141,7 @@ class _FeesScreenState extends State<FeesScreen> {
                       Expanded(child: Text(t, style: p.text(size: p.fs - 1))),
                     ]),
                   ),
-                FinePrint(app.tr('Valores de ejemplo para la demo.', 'Sample values for the demo.')),
+                FinePrint(app.tr('Ejemplo ilustrativo. Te avisaremos antes de cualquier cambio en las comisiones.', 'Illustrative example. We will notify you before any change to the fees.')),
               ],
             ),
           ),

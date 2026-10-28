@@ -6,7 +6,7 @@ const kgPerSack = 70;
 const lbPerKg = 2.20462;
 // Una carga = 125 kg de pergamino seco ≈ 94,3 kg de café verde (factor 92,8 kg pergamino → 70 kg verde)
 const lbGreenPerCarga = ((125 * 70) / 92.8) * lbPerKg;
-// Tasa fija SOLO para la demo
+// Tasa de referencia fija para convertir COP a USD (aproximada)
 const copPerUsd = 3900;
 
 String otherRole(String role) => role == 'farmer' ? 'buyer' : 'farmer';

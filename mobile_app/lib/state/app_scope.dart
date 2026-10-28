@@ -40,7 +40,7 @@ class PaletteOverride extends InheritedWidget {
   bool updateShouldNotify(PaletteOverride oldWidget) => oldWidget.palette != palette;
 }
 
-/// Llave global del navegador (la usa el panel de demo, que vive fuera de las rutas).
+/// Llave global del navegador (para navegar desde fuera de un widget, por ejemplo goHome()).
 final navKey = GlobalKey<NavigatorState>();
 
 /// Lleva la cuenta de las pantallas abiertas para saber en cuál estamos.

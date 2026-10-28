@@ -193,6 +193,42 @@ async function agreement(a) {
     farmer: { name: f?.name || '', photo: img(f?.photo_id), farmName: f?.farm_name || '', region: f?.region || '' },
     buyer: { name: b?.name || '', photo: img(b?.photo_id), company: b?.company || '', city: b?.city || '', country: b?.country || '' },
     ratings: { byFarmer: rat(a.farmer_id), byBuyer: rat(a.buyer_id) },
+    quality: qualityReport(await one('SELECT * FROM quality_reports WHERE agreement_id = $1', [a.id])),
+    disputes: (await many('SELECT * FROM disputes WHERE agreement_id = $1 ORDER BY id DESC', [a.id])).map((d) => dispute(d, a)),
+  };
+}
+
+function qualityReport(r) {
+  if (!r) return null;
+  return {
+    sca: r.sca,
+    moisture: r.moisture,
+    defects: r.defects,
+    matchesSample: r.matches_sample,
+    notes: r.notes || [],
+    comment: r.comment_es || r.comment_en ? { es: r.comment_es || '', en: r.comment_en || '' } : null,
+    photo: img(r.photo_id),
+    at: ms(r.created_at),
+  };
+}
+
+function dispute(d, a) {
+  const roleOf = (uid) => (uid == null ? null : uid === a.farmer_id ? 'farmer' : 'buyer');
+  return {
+    id: d.id,
+    agreementId: d.agreement_id,
+    openedBy: roleOf(d.opened_by),
+    reason: d.reason,
+    status: d.status,
+    events: (d.events || []).map((e) => ({
+      by: roleOf(e.by),
+      kind: e.kind,
+      text: e.es || e.en ? { es: e.es || '', en: e.en || '' } : null,
+      photo: img(e.photo),
+      at: e.at,
+    })),
+    createdAt: ms(d.created_at),
+    resolvedAt: d.resolved_at ? ms(d.resolved_at) : null,
   };
 }
 
