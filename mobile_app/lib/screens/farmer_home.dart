@@ -8,6 +8,7 @@ import '../utils/format.dart';
 import '../widgets/common.dart';
 import '../widgets/loader.dart';
 import '../widgets/lot_card.dart';
+import 'market.dart';
 
 class FarmerHomeScreen extends StatelessWidget {
   const FarmerHomeScreen({super.key});
@@ -72,6 +73,8 @@ class FarmerHomeScreen extends StatelessWidget {
                   ]),
                 ),
               ]),
+              const SizedBox(height: 14),
+              const MarketShortcut(),
               if (incomplete) ...[
                 const SizedBox(height: 14),
                 CardBox(

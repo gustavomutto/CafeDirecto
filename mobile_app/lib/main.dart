@@ -7,6 +7,7 @@ import 'screens/chat_room.dart';
 import 'screens/edit_profile.dart';
 import 'screens/fees.dart';
 import 'screens/learn.dart';
+import 'screens/market.dart';
 import 'screens/lot_detail.dart';
 import 'screens/order_detail.dart';
 import 'screens/publish_lot.dart';
@@ -75,6 +76,9 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       break;
     case 'fees':
       page = const FeesScreen();
+      break;
+    case 'market':
+      page = const MarketScreen();
       break;
     case 'edit-profile':
       page = const EditProfileScreen();

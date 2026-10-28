@@ -2,6 +2,7 @@
 // Ejecutar con:  flutter test
 import 'package:cafedirecto/models/models.dart';
 import 'package:cafedirecto/utils/format.dart';
+import 'package:cafedirecto/api/exchange_rates.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -40,5 +41,39 @@ void main() {
 
   test('texto bilingüe usa el otro idioma si falta uno', () {
     expect(const Bi('', 'Hi').of('es'), 'Hi');
+  });
+
+  test('el selector incluye los países latinoamericanos y sus monedas', () {
+    final countriesByCode = {
+      for (final country in latinAmericanCountries) country.code: country
+    };
+    expect(countriesByCode.length, 20);
+    expect(countriesByCode['CO']?.currency, 'COP');
+    expect(countriesByCode['MX']?.currency, 'MXN');
+    expect(countriesByCode['BR']?.currency, 'BRL');
+    expect(countriesByCode['EC']?.currency, 'USD');
+    expect(countriesByCode['CO']?.currencyName('es'), 'peso colombiano');
+    expect(countriesByCode['CO']?.currencyName('en'), 'Colombian peso');
+    expect(
+      latinAmericanCountries.every(
+          (country) => country.currencyName('es').isNotEmpty && country.currencyName('en').isNotEmpty),
+      isTrue,
+    );
+  });
+
+  test('lee tasas de cambio y fecha del formato real de la API', () {
+    final snapshot = parseExchangeRateResponse('''
+      {
+        "result": "success",
+        "time_last_update_unix": 1793145751,
+        "time_last_update_utc": "Wed, 28 Oct 2026 00:02:31 +0000",
+        "rates": {"COP": 3143.42897, "MXN": 18.673405, "BRL": 5.348375}
+      }
+    ''');
+
+    expect(snapshot.rates['COP'], 3143.42897);
+    expect(snapshot.rates['MXN'], 18.673405);
+    expect(snapshot.rates['BRL'], 5.348375);
+    expect(snapshot.updatedAt.toUtc().millisecondsSinceEpoch, 1793145751000);
   });
 }

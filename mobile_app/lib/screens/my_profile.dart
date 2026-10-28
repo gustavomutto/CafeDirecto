@@ -33,6 +33,7 @@ class MyProfileScreen extends StatelessWidget {
             () => context.go('/edit-profile')),
         if (app.isFarmer) link(Icons.add_rounded, app.tr('Publicar un lote nuevo', 'Publish a new lot'), () => context.go('/publish')),
         link(Icons.attach_money_rounded, app.tr('Comisiones y condiciones', 'Fees & terms'), () => context.go('/fees')),
+        link(Icons.currency_exchange_rounded, app.tr('Dólar USD/COP y precios', 'USD/COP rate & prices'), () => context.go('/market')),
         link(Icons.logout_rounded, app.tr('Cerrar sesión', 'Log out'), () async {
           final ok = await showDialog<bool>(
             context: context,

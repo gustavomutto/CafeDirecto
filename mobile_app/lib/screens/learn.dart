@@ -68,6 +68,24 @@ class LearnScreen extends StatelessWidget {
                 Icon(Icons.chevron_right_rounded, color: p.accent),
               ]),
             ),
+            const SizedBox(height: 10),
+            CardBox(
+              color: p.warmSoft,
+              onTap: () => context.go('/market'),
+              child: Row(children: [
+                Icon(Icons.trending_up_rounded, size: 30, color: p.warm),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(app.tr('Dólar USD/COP y precios de mercado', 'USD/COP rate & market prices'),
+                        style: p.text(weight: FontWeight.w800, color: p.warm)),
+                    Text(app.tr('TRM oficial y referencias verificadas', 'Official TRM and verified references'),
+                        style: p.text(size: 13)),
+                  ]),
+                ),
+                Icon(Icons.chevron_right_rounded, color: p.warm),
+              ]),
+            ),
             for (final s in sections.entries) ...[
               SectionTitle(s.value),
               GridView.count(

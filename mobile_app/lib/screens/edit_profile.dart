@@ -201,7 +201,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 10),
               field('phone', t('Celular', 'Phone'), type: TextInputType.phone),
               label(t('Idioma de la app', 'App language')),
-              Segmented(options: const {'es': 'Español', 'en': 'English'}, value: lang, onChanged: (v) => setState(() => lang = v)),
+              Segmented(options: const {'es': '🇪🇸 Español', 'en': '🇺🇸 English'}, value: lang, onChanged: (v) => setState(() => lang = v)),
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
