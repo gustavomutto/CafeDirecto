@@ -44,6 +44,77 @@ En local, los códigos para recuperar la contraseña se muestran en la terminal 
 | `MYMEMORY_EMAIL` | No | Sube el límite diario gratuito de MyMemory |
 | `PORT` | No | Puerto (Railway lo define solo) |
 
+## Arquitectura (v3)
+
+### App (`mobile_app/lib`) · capas con Provider y DTOs
+
+```
+lib/
+├─ main.dart            arranque: avisos del teléfono, sesión guardada, runApp
+├─ app/                 di.dart (inyección de dependencias), router.dart (rutas), app.dart (MaterialApp + providers)
+├─ core/                config (URL del servidor), network (ApiClient), logging (AppLogger),
+│                       notifications (avisos del teléfono), theme, utils (formatos, lectura de JSON), constants
+├─ domain/
+│  ├─ entities/         clases puras: Lot, Auction, Bid, Agreement, ChatMessage, AppNotification, CoffeeMarket…
+│  └─ repositories/     contratos (interfaces): LotRepository, AuctionRepository, ChatRepository…
+├─ data/
+│  ├─ dtos/             JSON del servidor ⇄ entidades (LotDto.fromJson(...).toEntity(), LotInputDto.toJson(...))
+│  ├─ datasources/      remote/ (una por módulo de la API) y local/ (token en el teléfono)
+│  └─ repositories/     implementación de los contratos (usa datasources + DTOs)
+└─ presentation/
+   ├─ providers/        SessionProvider, NotificationsProvider, MarketProvider, AuctionDetailController
+   ├─ screens/          una carpeta por módulo (auth, home, explore, lot, chat, orders, auctions, market, notifications…)
+   └─ widgets/          piezas reutilizables
+```
+
+Regla: las pantallas **nunca** llaman HTTP. Usan un provider o un repositorio (`context.repo<LotRepository>()`),
+el repositorio usa una fuente de datos y la fuente de datos usa `ApiClient`. Así cada capa se puede cambiar o probar sola.
+Los registros (`AppLogger`) se ven en la pestaña **Run / Logcat** de Android Studio con el prefijo `CafeDirecto.`.
+
+### Servidor (`server/src`)
+
+```
+index.js        arranque (migra la base, inicia el proceso de subastas, abre el puerto)
+app.js          Express: middlewares y montaje de rutas
+routes/         capa HTTP: auth, account, images, lots, auctions, conversations, agreements, notifications, market
+services/       reglas de negocio compartidas: agreements, auctions, conversations, notifications, market
+serialize.js    filas de la base → JSON (DTO) que consume la app
+lib/http.js     errores con código, lectura segura del cuerpo y transacciones
+db.js · auth.js · translate.js · mail.js · ratelimit.js
+test/           pruebas de la API contra PostgreSQL real (`npm test`)
+```
+
+## Novedades de la v3
+
+- **Subastas con fecha límite.** El caficultor abre una subasta desde su lote (precio base, incremento mínimo, sacos,
+  duración y entrega). Los compradores pujan por libra y ven la oferta más alta; los demás compradores aparecen como
+  "Comprador 1, 2…". Si alguien oferta en los últimos 2 minutos, el cierre se alarga 2 minutos. El caficultor elige
+  la oferta que quiera (antes o después del cierre; tiene 7 días) y se registra el **acuerdo** y el chat con el ganador.
+- **Notificaciones (campanita + aviso del teléfono).** Cuando un comprador abre un lote, el caficultor recibe
+  "👀 *Fulano* está interesado en tu café" (máximo una vez por comprador y lote cada 24 h) y puede ver la lista de
+  interesados y escribirles. También avisa: nueva oferta, te superaron, ganaste/perdiste, subasta terminada,
+  cotizaciones, acuerdo registrado, cambios de estado y calificaciones.
+- **Precio del café.** Precio interno de referencia de la FNC (por carga, kg y arroba), contrato C de la Bolsa de
+  Nueva York (con variación e histórico), TRM oficial, prima del café colombiano, calculadora "¿cuánto vale mi café?"
+  y el dólar en 20 países de América Latina (con la bolsa convertida a cada moneda).
+- **Acuerdos** muestra las subastas abiertas y el acceso a subastar o pujar.
+- **GitHub Actions** analiza, prueba y compila el APK de la app, y prueba la API con PostgreSQL en cada cambio.
+
+### Endpoints nuevos
+
+| Método | Ruta | Para qué |
+| --- | --- | --- |
+| GET | `/market/coffee` | Precio interno FNC, bolsa NY, TRM, conversiones e histórico (público) |
+| GET | `/auctions` · `/auctions?mine=1` | Subastas activas · mis subastas o en las que pujé |
+| POST | `/lots/:id/auction` | Abrir subasta (`basePriceLb, minIncrementLb, sacks, durationHours, incoterm`) |
+| GET | `/auctions/:id` | Detalle con ofertas |
+| POST | `/auctions/:id/bids` | Pujar (`priceLb`) |
+| POST | `/auctions/:id/award` | Elegir oferta ganadora (`bidId`) → crea el acuerdo |
+| POST | `/auctions/:id/cancel` | Cancelar |
+| GET | `/lots/:id/interest` | Compradores que vieron el lote (solo el dueño) |
+| GET | `/notifications` · `/notifications/unread` | Avisos (`?after=ID` para los nuevos) |
+| POST | `/notifications/read` | Marcar leídos (`ids` o `all`) |
+
 ## Cambios de la v1.3
 
 - Eliminar cuenta desde el perfil (exigido por Google Play). Pide la contraseña. Se borran perfil, lotes, conversaciones y fotos; si hay acuerdos registrados, se conservan para la otra parte sin datos personales.
