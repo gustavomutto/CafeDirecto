@@ -42,7 +42,7 @@ flutter test
 - **Servidor:** ESLint, `npm audit` (vulnerabilidades altas bloquean) y las pruebas de la API contra PostgreSQL real.
 - **App:** `flutter analyze` estricto (también las sugerencias), `flutter test` y que el APK compile.
   El APK de cada cambio queda en *Actions → (la ejecución) → Artifacts* durante 14 días (requiere cuenta de GitHub).
-- **Dependabot** propone cada semana las actualizaciones de dependencias.
+- Las dependencias se actualizan a mano, revisando antes que no rompan nada (`npm outdated`, `flutter pub outdated`).
 
 ## Publicar una versión nueva de la app
 

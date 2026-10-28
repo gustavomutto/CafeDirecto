@@ -23,7 +23,7 @@ Servidor en producción: <https://cafedirecto-production.up.railway.app> · [Pol
 | [`mobile_app/`](mobile_app) | App Flutter (Android y web), arquitectura por capas con Provider y DTOs |
 | [`server/`](server) | API Node.js + Express + PostgreSQL, desplegada en Railway |
 | [`docs/`](docs) | Arquitectura, API, auditoría, publicación en Google Play, diccionario de datos y documentos del proyecto |
-| `.github/` | GitHub Actions (CI), Dependabot y plantilla de pull request |
+| `.github/` | GitHub Actions (CI) y plantilla de pull request |
 
 ## Empezar
 
