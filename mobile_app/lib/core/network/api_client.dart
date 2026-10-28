@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -22,11 +23,18 @@ class ApiClient {
   /// Token de sesión (JWT). Lo pone el repositorio de autenticación.
   String? token;
 
+  /// Idioma de la app ('es' | 'en'). Se manda en Accept-Language para recibir los errores en ese idioma.
+  /// Antes de entrar se usa el idioma del teléfono.
+  String lang = PlatformDispatcher.instance.locale.languageCode == 'en' ? 'en' : 'es';
+
+  String _t(String es, String en) => lang == 'en' ? en : es;
+
   /// Se llama cuando el servidor responde 401 (sesión vencida o cerrada en otro teléfono).
   void Function()? onUnauthorized;
 
   Map<String, String> _headers({bool json = true}) => {
         if (json) 'Content-Type': 'application/json',
+        'Accept-Language': lang,
         if (token != null) 'Authorization': 'Bearer $token',
       };
 
@@ -59,10 +67,10 @@ class ApiClient {
       rethrow;
     } on TimeoutException {
       AppLogger.w('$method ${uri.path} tardó demasiado', tag: 'API');
-      throw const ApiException(0, 'El servidor tardó mucho en responder. Revisa tu conexión.');
+      throw ApiException(0, _t('El servidor tardó mucho en responder. Revisa tu conexión.', 'The server took too long to respond. Check your connection.'));
     } catch (e) {
       AppLogger.w('$method ${uri.path} sin conexión: $e', tag: 'API');
-      throw const ApiException(0, 'Sin conexión con el servidor. Revisa tu internet.');
+      throw ApiException(0, _t('Sin conexión con el servidor. Revisa tu internet.', 'No connection to the server. Check your internet.'));
     }
   }
 
@@ -94,12 +102,12 @@ class ApiClient {
   /// Respuesta que debe ser una lista de objetos JSON.
   Future<List<Map<String, dynamic>>> getList(String path, [Map<String, String>? query]) async {
     final v = await get(path, query);
-    if (v is! List) throw const ApiException(500, 'Respuesta inesperada del servidor');
+    if (v is! List) throw ApiException(500, _t('Respuesta inesperada del servidor', 'Unexpected server response'));
     return v.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
   }
 
   Map<String, dynamic> _asMap(dynamic v) {
-    if (v is! Map) throw const ApiException(500, 'Respuesta inesperada del servidor');
+    if (v is! Map) throw ApiException(500, _t('Respuesta inesperada del servidor', 'Unexpected server response'));
     return Map<String, dynamic>.from(v);
   }
 

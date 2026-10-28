@@ -33,7 +33,7 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
   List<String> notes = ['panela', 'chocolate'];
   int? photoId;
   final _name = TextEditingController();
-  final _harvest = TextEditingController(text: 'Cosecha 2026');
+  final _harvest = TextEditingController();
   int? doneId;
   bool _busy = false;
   bool _loading = false;
@@ -43,6 +43,7 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
   @override
   void initState() {
     super.initState();
+    _harvest.text = context.session.tr('Cosecha ${DateTime.now().year}', '${DateTime.now().year} harvest');
     // La TRM del día para convertir el precio por carga a dólares.
     WidgetsBinding.instance.addPostFrameCallback((_) => context.read<MarketProvider>().ensureLoaded());
     if (editing) {
@@ -92,7 +93,7 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
   Future<void> _publish() async {
     final app = context.session;
     if (photoId == null) {
-      app.showToast('Agrega una foto del lote', '📷');
+      app.showToast(app.tr('Agrega una foto del lote', 'Add a photo of the lot'), '📷');
       return;
     }
     setState(() => _busy = true);
@@ -114,7 +115,7 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
       app.touch();
       if (!mounted) return;
       if (editing) {
-        app.showToast('Lote actualizado');
+        app.showToast(app.tr('Lote actualizado', 'Lot updated'));
         Navigator.of(context).pop();
       } else {
         setState(() => doneId = saved.id);
@@ -129,6 +130,9 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
   @override
   Widget build(BuildContext context) {
     final p = context.pal;
+    final app = context.app;
+    final lang = app.lang;
+    String t(String es, String en) => app.tr(es, en);
     context.watch<MarketProvider>(); // redibuja cuando llega la TRM
 
     if (_loading) {
@@ -155,14 +159,14 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              Text('¡Lote publicado!', style: p.display(size: 30)),
+              Text(t('¡Lote publicado!', 'Lot published!'), style: p.display(size: 30)),
               const SizedBox(height: 8),
-              Text('Ya lo pueden ver los compradores registrados en CaféDirecto.',
+              Text(t('Ya lo pueden ver los compradores registrados en CaféDirecto.', 'Buyers registered on CaféDirecto can see it now.'),
                   textAlign: TextAlign.center, style: p.muted(size: p.fs)),
               const SizedBox(height: 28),
-              Btn('Ver mi lote', icon: Icons.visibility_outlined, large: true, block: true, onPressed: () => context.replace('/lot/$doneId')),
+              Btn(t('Ver mi lote', 'View my lot'), icon: Icons.visibility_outlined, large: true, block: true, onPressed: () => context.replace('/lot/$doneId')),
               const SizedBox(height: 10),
-              Btn('Ir al inicio', kind: BtnKind.ghost, large: true, block: true, onPressed: () => goHome()),
+              Btn(t('Ir al inicio', 'Go home'), kind: BtnKind.ghost, large: true, block: true, onPressed: () => goHome()),
             ]),
           ),
         ),
@@ -200,19 +204,19 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
       backgroundColor: p.bg,
       body: SafeArea(
         child: Column(children: [
-          TopBar(title: editing ? 'Editar lote' : 'Publicar lote', subtitle: '5 pasos sencillos'),
+          TopBar(title: editing ? t('Editar lote', 'Edit lot') : t('Publicar lote', 'Publish lot'), subtitle: t('5 pasos sencillos', '5 simple steps')),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
                 section([
-                  stepTitle('1', '¿Qué variedad?'),
+                  stepTitle('1', t('¿Qué variedad?', 'Which variety?')),
                   Wrap(spacing: 8, runSpacing: 8, children: [
                     for (final v in varieties) ChipBtn(v, big: true, active: variety == v, onTap: () => setState(() => variety = v)),
                   ]),
                 ]),
                 section([
-                  stepTitle('2', '¿Qué proceso?'),
+                  stepTitle('2', t('¿Qué proceso?', 'Which process?')),
                   Row(children: [
                     for (final e in processes.entries) ...[
                       if (e.key != processes.keys.first) const SizedBox(width: 8),
@@ -228,7 +232,7 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
                               child: Column(children: [
                                 Text(e.value.icon, style: const TextStyle(fontSize: 28)),
                                 const SizedBox(height: 4),
-                                Text(e.value.es,
+                                Text(e.value.of(lang),
                                     style: p.text(weight: FontWeight.w800, color: process == e.key ? p.primaryInk : p.ink)),
                               ]),
                             ),
@@ -239,18 +243,18 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
                   ]),
                 ]),
                 section([
-                  stepTitle('3', '¿Cuántos sacos de 70 kg?'),
+                  stepTitle('3', t('¿Cuántos sacos de 70 kg?', 'How many 70 kg bags?')),
                   QtyStepper(
                     value: sacks,
                     min: 1,
                     max: 200,
                     onChanged: (v) => setState(() => sacks = v),
-                    label: 'sacos · ${fmtNum(sacks * 70, 'es')} kg',
+                    label: '${t('sacos', 'bags')} · ${fmtNum(sacks * 70, lang)} kg',
                   ),
                 ]),
                 section([
-                  stepTitle('4', 'Puntaje SCA'),
-                  QtyStepper(value: sca, min: 78, max: 95, step: 0.5, onChanged: (v) => setState(() => sca = v), label: 'puntos'),
+                  stepTitle('4', t('Puntaje SCA', 'SCA score')),
+                  QtyStepper(value: sca, min: 78, max: 95, step: 0.5, onChanged: (v) => setState(() => sca = v), label: t('puntos', 'points')),
                   if (sca < 80)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -258,18 +262,18 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
                         Icon(Icons.info_outline_rounded, size: 15, color: p.danger),
                         const SizedBox(width: 6),
                         Expanded(
-                          child: Text('CaféDirecto recibe cafés de 80 puntos o más.',
+                          child: Text(t('CaféDirecto recibe cafés de 80 puntos o más.', 'CaféDirecto accepts coffees of 80 points or more.'),
                               style: p.text(size: 14, weight: FontWeight.w700, color: p.danger)),
                         ),
                       ]),
                     ),
                 ]),
                 section([
-                  stepTitle('5', 'Su precio'),
+                  stepTitle('5', t('Su precio', 'Your price')),
                   Segmented(
                     value: unit,
                     onChanged: (v) => setState(() => unit = v),
-                    options: const {'lb': 'Por libra (USD)', 'carga': 'Por carga (COP)'},
+                    options: {'lb': t('Por libra (USD)', 'Per pound (USD)'), 'carga': t('Por carga (COP)', 'Per carga (COP)')},
                   ),
                   const SizedBox(height: 12),
                   if (unit == 'lb')
@@ -279,8 +283,8 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
                       max: 40,
                       step: 0.1,
                       onChanged: (v) => setState(() => priceLb = v),
-                      format: (v) => fmtUSD(v, 'es'),
-                      label: 'por libra',
+                      format: (v) => fmtUSD(v, lang),
+                      label: t('por libra', 'per pound'),
                     )
                   else ...[
                     QtyStepper(
@@ -290,20 +294,20 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
                       step: 50000,
                       onChanged: (v) => setState(() => priceCarga = v),
                       format: fmtCOP,
-                      label: 'por carga (125 kg pergamino)',
+                      label: t('por carga (125 kg pergamino)', 'per carga (125 kg parchment)'),
                     ),
                     const SizedBox(height: 8),
-                    Text('≈ ${fmtUSD(lb, 'es')} por libra de café verde', textAlign: TextAlign.center, style: p.muted(size: 14)),
+                    Text(t('≈ ${fmtUSD(lb, lang)} por libra de café verde', '≈ ${fmtUSD(lb, lang)} per pound of green coffee'), textAlign: TextAlign.center, style: p.muted(size: 14)),
                   ],
                   _RateHint(priceLb: lb),
-                  TotalBox('Si vende todo el lote', fmtUSD(quoteTotal(lb, sacks.round()), 'es', 0)),
+                  TotalBox(t('Si vende todo el lote', 'If you sell the whole lot'), fmtUSD(quoteTotal(lb, sacks.round()), lang, 0)),
                 ]),
                 section([
-                  stepTitle('+', 'Sabores en la taza', small: '(opcional)'),
+                  stepTitle('+', t('Sabores en la taza', 'Cup flavors'), small: t('(opcional)', '(optional)')),
                   Wrap(spacing: 8, runSpacing: 8, children: [
                     for (final n in _noteOptions)
                       ChipBtn(
-                        notesCatalog[n]!.es,
+                        notesCatalog[n]!.of(lang),
                         active: notes.contains(n),
                         onTap: () => setState(() {
                           if (notes.contains(n)) {
@@ -316,11 +320,11 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
                       ),
                   ]),
                   const SizedBox(height: 18),
-                  stepTitle('+', 'Foto del lote'),
+                  stepTitle('+', t('Foto del lote', 'Lot photo')),
                   PhotoSlot(
                     url: photoId == null ? null : '/images/$photoId',
                     height: 190,
-                    label: 'Toca para tomar o elegir una foto',
+                    label: t('Toca para tomar o elegir una foto', 'Tap to take or choose a photo'),
                     preview: (u) => NetImg(u),
                     onTap: () async {
                       final id = await pickAndUpload(context);
@@ -328,16 +332,16 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
                     },
                   ),
                   const SizedBox(height: 18),
-                  Text('Cosecha', style: p.text(size: p.fs - 2, weight: FontWeight.w700)),
+                  Text(t('Cosecha', 'Harvest'), style: p.text(size: p.fs - 2, weight: FontWeight.w700)),
                   const SizedBox(height: 6),
                   TextField(controller: _harvest, style: p.text()),
                   const SizedBox(height: 18),
-                  Text('Nombre del lote (opcional)', style: p.text(size: p.fs - 2, weight: FontWeight.w700)),
+                  Text(t('Nombre del lote (opcional)', 'Lot name (optional)'), style: p.text(size: p.fs - 2, weight: FontWeight.w700)),
                   const SizedBox(height: 6),
                   TextField(
                     controller: _name,
                     style: p.text(),
-                    decoration: InputDecoration(hintText: 'Lote $variety'),
+                    decoration: InputDecoration(hintText: t('Lote $variety', '$variety lot')),
                   ),
                 ]),
               ],
@@ -346,7 +350,7 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
         ]),
       ),
       bottomNavigationBar: ScreenFooter(children: [
-        Expanded(child: Btn(_busy ? 'Guardando…' : (editing ? 'Guardar cambios' : 'Publicar lote'), icon: Icons.send_rounded, large: true, block: true, onPressed: (sca < 80 || _busy) ? null : _publish)),
+        Expanded(child: Btn(_busy ? t('Guardando…', 'Saving…') : (editing ? t('Guardar cambios', 'Save changes') : t('Publicar lote', 'Publish lot')), icon: Icons.send_rounded, large: true, block: true, onPressed: (sca < 80 || _busy) ? null : _publish)),
       ]),
     );
   }
@@ -360,14 +364,21 @@ class _RateHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.pal;
+    final app = context.app;
+    String t(String es, String en) => app.tr(es, en);
     final m = context.watch<MarketProvider>();
     final rate = m.copPerUsd;
     final fnc = m.coffee?.internal?.copPerCarga;
     final mine = usdLbToCopCarga(priceLb, rate ?? fallbackCopPerUsd);
     final lines = <String>[
-      rate == null ? 'Dólar de referencia: ${fmtCOP(fallbackCopPerUsd)} (no se pudo consultar la TRM de hoy)' : 'TRM de hoy: ${fmtCOP(rate)} por dólar',
-      'Equivale a ${fmtCOP(mine)} por carga',
-      if (fnc != null) 'Precio interno FNC hoy: ${fmtCOP(fnc)} por carga (${mine >= fnc ? '+' : '−'}${fmtNum(((mine - fnc).abs() / fnc * 100), 'es', 0)} %)',
+      rate == null
+          ? t('Dólar de referencia: ${fmtCOP(fallbackCopPerUsd)} (no se pudo consultar la TRM de hoy)',
+              'Reference dollar: ${fmtCOP(fallbackCopPerUsd)} (today\'s official rate could not be loaded)')
+          : t('TRM de hoy: ${fmtCOP(rate)} por dólar', "Today's official rate (TRM): ${fmtCOP(rate)} per dollar"),
+      t('Equivale a ${fmtCOP(mine)} por carga', 'Equals ${fmtCOP(mine)} per carga'),
+      if (fnc != null)
+        '${t('Precio interno FNC hoy: ${fmtCOP(fnc)} por carga', "Today's FNC internal price: ${fmtCOP(fnc)} per carga")}'
+            ' (${mine >= fnc ? '+' : '−'}${fmtNum(((mine - fnc).abs() / fnc * 100), app.lang, 0)} %)',
     ];
     return Padding(
       padding: const EdgeInsets.only(top: 8),

@@ -35,6 +35,7 @@ Future<void> main() async {
   await LocalNotifications.instance.init();
 
   final deps = AppDependencies.create();
+  await deps.appearance.load(); // antes del primer cuadro, para no parpadear de claro a oscuro
   await deps.session.restore();
   deps.wireSession();
   AppLogger.i('App iniciada · sesión: ${deps.session.loggedIn ? deps.session.user!.email : 'ninguna'}');

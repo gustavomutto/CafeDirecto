@@ -203,7 +203,7 @@ class Btn extends StatelessWidget {
         fg = p.ink;
         break;
       case BtnKind.light:
-        bg = Colors.white;
+        bg = p.dark ? p.surface : Colors.white;
         fg = p.primary;
         break;
       case BtnKind.soft:

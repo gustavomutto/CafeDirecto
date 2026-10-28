@@ -169,6 +169,12 @@ class FakeAuthRepository implements AuthRepository {
   Future<void> deleteAccount(String password) async {}
   @override
   Future<Account> updateAccount(AccountUpdate data) async => stored!;
+  bool failLanguage = false;
+  @override
+  Future<Account> setLanguage(String lang) async {
+    if (failLanguage) throw const ApiException(0, 'Sin conexión con el servidor. Revisa tu internet.');
+    return stored = stored!.withLang(lang);
+  }
   @override
   Future<Account> updateFarmProfile(FarmProfileUpdate data) async => stored!;
   @override

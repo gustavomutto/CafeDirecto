@@ -9,6 +9,7 @@ const cors = require('cors');
 const multer = require('multer');
 
 const { securityHeaders, requestLog, corsOptions } = require('./lib/middleware');
+const { localizeErrors } = require('./lib/i18n');
 
 function createApp() {
   const app = express();
@@ -17,6 +18,7 @@ function createApp() {
   app.disable('x-powered-by');
   app.use(securityHeaders);
   app.use(requestLog);
+  app.use(localizeErrors); // errores en inglés si la app está en inglés
   app.use(cors(corsOptions()));
   app.use(express.json({ limit: '1mb' }));
 

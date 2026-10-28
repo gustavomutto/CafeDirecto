@@ -3,12 +3,13 @@
 //   context.app      → SessionProvider y se redibuja cuando cambia (usar dentro de build)
 //   context.session  → SessionProvider sin escuchar (usar en botones, callbacks, initState)
 //   context.repo<T>()→ un repositorio (LotRepository, ChatRepository, …)
-//   context.pal      → paleta de colores del rol activo
+//   context.pal      → paleta de colores del rol activo, con la apariencia elegida (claro, neutro, oscuro…)
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/palette.dart';
+import 'appearance_provider.dart';
 import 'session_provider.dart';
 
 extension AppContextX on BuildContext {
@@ -28,8 +29,17 @@ extension AppContextX on BuildContext {
   /// Paleta del rol activo (o la de un [PaletteOverride] si hay uno arriba).
   Palette get pal {
     final o = dependOnInheritedWidgetOfExactType<PaletteOverride>();
-    return o?.palette ?? paletteFor(Provider.of<SessionProvider>(this, listen: _listen).role);
+    return o?.palette ?? palFor(Provider.of<SessionProvider>(this, listen: _listen).role);
   }
+
+  /// Paleta de un rol con la apariencia elegida (sirve antes de entrar, cuando aún no hay rol).
+  Palette palFor(String role) {
+    final a = Provider.of<AppearanceProvider?>(this, listen: _listen);
+    return a?.paletteFor(role) ?? paletteFor(role);
+  }
+
+  /// Preferencias de apariencia: dentro de build escucha, en callbacks solo lee.
+  AppearanceProvider get appearance => Provider.of<AppearanceProvider>(this, listen: _listen);
 
   /// Abre una pantalla por su ruta, por ejemplo '/lot/12'.
   Future<void> go(String path) => Navigator.of(this).pushNamed(path);
