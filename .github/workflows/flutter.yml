@@ -2,9 +2,12 @@ name: App Flutter
 
 on:
   push:
+    branches: ['**'] # las etiquetas no disparan esta revisión; las versiones salen por "release"
     paths: ['mobile_app/**', '.github/workflows/flutter.yml']
   pull_request:
     paths: ['mobile_app/**']
+  release:
+    types: [published]
   workflow_dispatch:
 
 concurrency:
@@ -16,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: write # solo lo usa el paso "Publicar versión" (crear el Release con el APK)
+      contents: write # solo lo usa el paso "Publicar versión" (adjuntar el APK al Release)
     defaults:
       run:
         working-directory: mobile_app
@@ -75,14 +78,15 @@ jobs:
           path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
 
-      # Al subir una etiqueta vX.Y.Z (git tag v3.1.0 && git push origin v3.1.0) el APK se publica
-      # en Releases. Enlace fijo para descargar siempre la última versión, sin cuenta de GitHub:
+      # Al publicar un Release (GitHub → Releases → Draft a new release → etiqueta v3.1.1 → Publish)
+      # se adjunta el APK. Enlace fijo para descargar siempre la última versión, sin cuenta de GitHub:
       #   https://github.com/<dueño>/<repo>/releases/latest/download/CafeDirecto.apk
       - name: Publicar versión en Releases
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
         run: |
           cp build/app/outputs/flutter-apk/app-release.apk CafeDirecto.apk
           cat > notas.md <<'EOF'
@@ -99,9 +103,9 @@ jobs:
           - **Crear cuenta**: elige *caficultor* o *comprador*. Contraseña de 8 o más caracteres con letras y números.
           - Los caficultores publican lotes desde **Inicio**; los compradores ven todos los lotes publicados en **Explorar**.
           EOF
-          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" CafeDirecto.apk --clobber
-          else
-            gh release create "$GITHUB_REF_NAME" CafeDirecto.apk --title "CaféDirecto $GITHUB_REF_NAME" --notes-file notas.md --latest
+          gh release upload "$TAG" CafeDirecto.apk --clobber
+          # si el Release se publicó sin descripción, se ponen las instrucciones de instalación
+          if [ -z "$(gh release view "$TAG" --json body --jq .body)" ]; then
+            gh release edit "$TAG" --notes-file notas.md
           fi
           echo "::notice title=APK publicado::https://github.com/$GH_REPO/releases/latest/download/CafeDirecto.apk"

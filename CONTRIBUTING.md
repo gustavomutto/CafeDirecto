@@ -49,13 +49,12 @@ flutter test
 Para que el equipo y los usuarios de prueba descarguen el APK con el enlace fijo del README:
 
 1. Sube el número en `mobile_app/pubspec.yaml` (por ejemplo `version: 3.1.1+6`), haz commit y súbelo a `gustavo`.
-2. Crea y sube la etiqueta con ese número:
-   ```bash
-   git tag v3.1.1
-   git push origin v3.1.1
-   ```
-3. GitHub Actions compila, prueba y publica `CafeDirecto.apk` en *Releases* (unos 10 minutos).
-   El enlace `releases/latest/download/CafeDirecto.apk` pasa a dar esa versión.
+2. En GitHub: **Releases → Draft a new release**.
+   - *Choose a tag*: escribe `v3.1.1` y elige **Create new tag on publish**; *Target*: `gustavo`.
+   - Título `CaféDirecto v3.1.1` y, si quieres, las novedades (si lo dejas vacío se ponen las instrucciones de instalación).
+   - **Publish release**.
+3. GitHub Actions compila, prueba y adjunta `CafeDirecto.apk` al Release (unos 10 minutos).
+   El enlace `releases/latest/download/CafeDirecto.apk` del README pasa a dar esa versión.
 
 > Mientras no exista la clave de firma de Google Play (`docs/PUBLICAR_EN_PLAY.md`), cada APK se firma con una
 > clave temporal distinta: para actualizar, hay que desinstalar la versión anterior. Los datos no se pierden (están en el servidor).
