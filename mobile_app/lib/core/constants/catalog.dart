@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/bi.dart';
 
-const regions = ['Huila', 'Nariño', 'Cauca', 'Quindío', 'Tolima', 'Sierra Nevada'];
+/// Regiones cafeteras para el perfil de la finca y los filtros de Explorar.
+/// "Sierra Nevada" es la Sierra Nevada de Santa Marta (zona cafetera entre Magdalena, Cesar y La Guajira).
+const regions = ['Huila', 'Nariño', 'Cauca', 'Quindío', 'Tolima', 'Cesar', 'Sierra Nevada'];
 
 const varieties = ['Castillo', 'Caturra', 'Geisha', 'Pink Bourbon', 'Colombia'];
 
