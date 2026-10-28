@@ -29,7 +29,7 @@ void main() {
 
   test('conversión de precio por carga a USD/lb con la TRM del día', () {
     // 1 carga (125 kg pergamino, factor 94) ≈ 205,2 lb de café verde
-    expect(lbGreenPerCarga, closeTo(205.24, 0.01));
+    expect(lbGreenPerCarga, closeTo(205.22, 0.01));
     // con la TRM real (3.147,40) y con la tasa de respaldo (3.900)
     expect(copCargaToUsdLb(2065000, 3147.4), closeTo(3.197, 0.001));
     expect(copCargaToUsdLb(3200000), closeTo(4.0, 0.01));
