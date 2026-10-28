@@ -1,0 +1,21 @@
+node_modules/
+dist/
+release/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.*
+!.env.example
+Thumbs.db
+desktop.ini
+
+# Flutter / Android (además de los .gitignore de cada carpeta)
+**/build/
+**/.dart_tool/
+**/android/key.properties
+**/*.jks
+**/*.keystore
+.idea/
+*.iml
+.vscode/

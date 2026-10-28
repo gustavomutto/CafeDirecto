@@ -248,3 +248,44 @@ CREATE TABLE IF NOT EXISTS market_snapshots (
   trm            NUMERIC,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ── v3 (auditoría): índices para las consultas frecuentes ─────────
+-- Llaves foráneas sin índice hacen lentos los filtros y los borrados en cascada.
+CREATE INDEX IF NOT EXISTS lots_farmer_idx          ON lots (farmer_id) WHERE active;
+CREATE INDEX IF NOT EXISTS lots_active_created_idx  ON lots (created_at DESC) WHERE active AND sacks > 0;
+CREATE INDEX IF NOT EXISTS conversations_buyer_idx  ON conversations (buyer_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS conversations_farmer_idx ON conversations (farmer_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS agreements_farmer_idx    ON agreements (farmer_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS agreements_buyer_idx     ON agreements (buyer_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ratings_by_user_idx      ON ratings (by_user_id);
+CREATE INDEX IF NOT EXISTS lot_views_buyer_idx      ON lot_views (buyer_id);
+CREATE INDEX IF NOT EXISTS bids_buyer_idx           ON bids (buyer_id);
+CREATE INDEX IF NOT EXISTS auctions_farmer_idx      ON auctions (farmer_id, id DESC);
+CREATE INDEX IF NOT EXISTS auctions_open_ends_idx   ON auctions (ends_at) WHERE status = 'open';
+CREATE INDEX IF NOT EXISTS notifications_unread_idx ON notifications (user_id) WHERE read_at IS NULL;
+CREATE INDEX IF NOT EXISTS images_owner_idx         ON images (owner_id);
+
+-- ── v3 (auditoría): reglas de integridad ──────────────────────────
+-- NOT VALID: se aplican a los datos nuevos sin revisar los viejos, así nunca bloquean el arranque.
+DO $$
+DECLARE c RECORD;
+BEGIN
+  FOR c IN SELECT * FROM (VALUES
+    ('lots',          'lots_process_chk',        'CHECK (process IN (''lavado'',''honey'',''natural''))'),
+    ('lots',          'lots_price_chk',          'CHECK (price_lb > 0 AND price_lb <= 100)'),
+    ('lots',          'lots_sca_chk',            'CHECK (sca BETWEEN 0 AND 100)'),
+    ('farms',         'farms_altitude_chk',      'CHECK (altitude BETWEEN 0 AND 6000)'),
+    ('farms',         'farms_sca_chk',           'CHECK (sca BETWEEN 0 AND 100)'),
+    ('agreements',    'agreements_status_chk',   'CHECK (status BETWEEN 1 AND 3)'),
+    ('agreements',    'agreements_price_chk',    'CHECK (price_lb > 0 AND sacks > 0)'),
+    ('messages',      'messages_type_chk',       'CHECK (type IN (''text'',''photo'',''quote'',''agreement'',''system''))'),
+    ('messages',      'messages_lang_chk',       'CHECK (lang IS NULL OR lang IN (''es'',''en''))'),
+    ('notifications', 'notifications_type_chk',  'CHECK (length(type) BETWEEN 1 AND 40)'),
+    ('lot_views',     'lot_views_views_chk',     'CHECK (views >= 1)')
+  ) AS t(tbl, name, def)
+  LOOP
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = c.name) THEN
+      EXECUTE format('ALTER TABLE %I ADD CONSTRAINT %I %s NOT VALID', c.tbl, c.name, c.def);
+    END IF;
+  END LOOP;
+END $$;

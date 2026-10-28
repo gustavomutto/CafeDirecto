@@ -1,7 +1,7 @@
 // Envío de correos con Resend (https://resend.com) usando su API HTTP, sin dependencias.
 // Variables: RESEND_API_KEY y MAIL_FROM (por ejemplo "CaféDirecto <no-reply@tudominio.com>").
 // Sin RESEND_API_KEY, en desarrollo el correo se muestra en la consola del servidor.
-const { isProduction } = require('./auth');
+const { isProduction } = require('./lib/secrets');
 
 const configured = () => !!process.env.RESEND_API_KEY && !!process.env.MAIL_FROM;
 

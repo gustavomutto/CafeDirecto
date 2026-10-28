@@ -7,7 +7,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../core/logging/app_logger.dart';
 import '../../core/network/api_exception.dart';
-import '../../core/notifications/local_notifications.dart';
+import '../../core/notifications/alert_service.dart';
 import '../../domain/entities/app_notification.dart';
 import '../../domain/repositories/chat_repository.dart';
 import '../../domain/repositories/notification_repository.dart';
@@ -19,7 +19,7 @@ class NotificationsProvider extends ChangeNotifier {
 
   final ChatRepository _chat;
   final NotificationRepository _repo;
-  final LocalNotifications _local;
+  final AlertService _local;
   AppLifecycleListener? _life;
 
   int unreadMessages = 0;
@@ -96,7 +96,8 @@ class NotificationsProvider extends ChangeNotifier {
       final changed = counts.messages != unreadMessages || counts.notifications != unreadNotifications;
       unreadMessages = counts.messages;
       unreadNotifications = counts.notifications;
-      final fresh = await _repo.newerThan(_lastAlerted);
+      // Solo se pide la lista si el servidor tiene un aviso más reciente que el último mostrado.
+      final fresh = counts.latestNotificationId > _lastAlerted ? await _repo.newerThan(_lastAlerted) : const <AppNotification>[];
       if (fresh.isNotEmpty) {
         for (final n in fresh) {
           await _local.show(id: n.id, title: n.title.of(lang), body: n.body.of(lang), route: n.route);

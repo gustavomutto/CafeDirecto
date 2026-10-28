@@ -8,19 +8,22 @@ async function api(path,{token,method='GET',body,form}={}){
   return {s:r.status,j};
 }
 const rnd=Math.random().toString(36).slice(2,7);
-let r=await api('/auth/register',{method:'POST',body:{email:`luz${rnd}@x.co`,password:'123456',role:'farmer',name:'Luz Marina',farmName:'La Esperanza',region:'Huila'}});
+let r=await api('/auth/register',{method:'POST',body:{email:`luz${rnd}@x.co`,password:'cafe1234',role:'farmer',name:'Luz Marina',farmName:'La Esperanza',region:'Huila'}});
 check(r.s===201,'reg farmer '+JSON.stringify(r.j)); const F=r.j.token, fid=r.j.user.id;
-r=await api('/auth/register',{method:'POST',body:{email:`lena${rnd}@x.de`,password:'123456',role:'buyer',name:'Lena',company:'Nordlicht'}});
+r=await api('/auth/register',{method:'POST',body:{email:`lena${rnd}@x.de`,password:'cafe1234',role:'buyer',name:'Lena',company:'Nordlicht'}});
 check(r.s===201 && r.j.user.lang==='en','reg buyer'); const Bt=r.j.token, bid=r.j.user.id;
-r=await api('/auth/register',{method:'POST',body:{email:`lena${rnd}@x.de`,password:'123456',role:'buyer',name:'X'}}); check(r.s===409,'dup email');
+r=await api('/auth/register',{method:'POST',body:{email:`lena${rnd}@x.de`,password:'cafe1234',role:'buyer',name:'X'}}); check(r.s===409,'dup email');
 r=await api('/auth/login',{method:'POST',body:{email:`luz${rnd}@x.co`,password:'bad'}}); check(r.s===401,'bad login');
-r=await api('/auth/login',{method:'POST',body:{email:`LUZ${rnd}@x.co`,password:'123456'}}); check(r.s===200,'login');
+r=await api('/auth/login',{method:'POST',body:{email:`LUZ${rnd}@x.co`,password:'cafe1234'}}); check(r.s===200,'login');
 // image
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==','base64');
 const fd=new FormData(); fd.append('file', new Blob([png],{type:'image/png'}),'a.png');
 r=await api('/images',{token:F,method:'POST',form:fd}); check(r.s===201,'upload '+JSON.stringify(r.j)); const img=r.j.id;
-let g=await fetch(B+'/images/'+img); check(g.headers.get('content-type')==='image/png','get img');
-r=await api('/me',{token:F,method:'PUT',body:{photoId:img,phone:'+57 300'}}); check(r.j.user.photo===`/images/${img}`,'me photo');
+const imgUrl=r.j.url; check(/^\/images\/\d+\?s=[\w-]{16}$/.test(imgUrl),'signed url '+imgUrl);
+let g=await fetch(B+imgUrl); check(g.status===200 && g.headers.get('content-type')==='image/png','get img');
+g=await fetch(B+'/images/'+img); check(g.status===404,'unsigned image hidden');
+g=await fetch(B+imgUrl.replace(/s=.*/,'s=AAAAAAAAAAAAAAAA')); check(g.status===404,'bad signature hidden');
+r=await api('/me',{token:F,method:'PUT',body:{photoId:img,phone:'+57 300'}}); check(r.j.user.photo===imgUrl,'me photo');
 r=await api('/me/profile',{token:F,method:'PUT',body:{name:'La Esperanza',region:'Huila',municipality:'Pitalito',altitude:1750,hectares:6,varieties:['Caturra'],processes:['honey'],sca:87.5,notes:['panela'],since:1998,story:'Somos tres generaciones',quote:'Hola',certifications:'DOP Huila\nFNC',coverId:img,gallery:[img]}});
 check(r.s===200 && r.j.profile.story.es==='Somos tres generaciones' && r.j.profile.certifications.length===2,'farm profile '+JSON.stringify(r.j).slice(0,300));
 r=await api('/me/profile',{token:Bt,method:'PUT',body:{company:'Nordlicht',city:'Berlin',country:'Germany',about:'We roast',looking:'Honey lots'}});

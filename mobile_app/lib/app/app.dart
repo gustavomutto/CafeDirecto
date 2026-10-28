@@ -24,7 +24,6 @@ class CafeDirectoApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: buildTheme(paletteFor(role)),
           navigatorKey: navKey,
-          navigatorObservers: [routeTracker],
           initialRoute: '/',
           onGenerateRoute: generateRoute,
           builder: (context, child) => ToastOverlay(child: child ?? const SizedBox.shrink()),

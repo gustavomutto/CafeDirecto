@@ -46,6 +46,6 @@ class ChatRepositoryImpl implements ChatRepository {
   @override
   Future<UnreadCounts> unread() async {
     final j = await _remote.unread();
-    return UnreadCounts(asInt(j['unread']), asInt(j['notifications']));
+    return UnreadCounts(asInt(j['unread']), asInt(j['notifications']), asInt(j['latestNotificationId']));
   }
 }

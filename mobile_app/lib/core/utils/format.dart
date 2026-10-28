@@ -1,29 +1,16 @@
-// Utilidades de formato y cálculo (conversión sacos/libras, monedas, fechas, reputación).
-import 'dart:math';
-
+// Utilidades de formato y cálculo (conversión sacos/libras, monedas y fechas).
 
 const kgPerSack = 70;
 const lbPerKg = 2.20462;
-// Una carga = 125 kg de pergamino seco ≈ 94,3 kg de café verde (factor 92,8 kg pergamino → 70 kg verde)
-const lbGreenPerCarga = ((125 * 70) / 92.8) * lbPerKg;
-// Tasa de referencia fija para convertir COP a USD (aproximada)
-const copPerUsd = 3900;
 
-String otherRole(String role) => role == 'farmer' ? 'buyer' : 'farmer';
-String langOf(String role) => role == 'farmer' ? 'es' : 'en';
+/// Una carga = 125 kg de café pergamino seco. Con el factor de rendimiento base de la FNC (94:
+/// 94 kg de pergamino → 70 kg de café verde) equivale a ≈ 93,1 kg ≈ 205,2 lb de café verde.
+const yieldFactor = 94;
+const lbGreenPerCarga = ((125 * 70) / yieldFactor) * lbPerKg;
 
-final _rnd = Random();
-const _chars = '0123456789abcdefghijklmnopqrstuvwxyz';
-
-String uid([String prefix = 'id']) {
-  final b = StringBuffer(prefix);
-  for (var i = 0; i < 6; i++) {
-    b.write(_chars[_rnd.nextInt(_chars.length)]);
-  }
-  final t = DateTime.now().millisecondsSinceEpoch.toRadixString(36);
-  b.write(t.substring(max(0, t.length - 4)));
-  return b.toString();
-}
+/// Tasa de respaldo SOLO para cuando no se pudo consultar la TRM del día (la app usa la TRM real
+/// que entrega el servidor; ver MarketProvider.copPerUsd).
+const fallbackCopPerUsd = 3900.0;
 
 int nowMs() => DateTime.now().millisecondsSinceEpoch;
 
@@ -31,7 +18,11 @@ double sacksToLb(num sacks) => sacks * kgPerSack * lbPerKg;
 
 double quoteTotal(double priceLb, int sacks) => priceLb * sacksToLb(sacks);
 
-double copCargaToUsdLb(num cop) => cop / copPerUsd / lbGreenPerCarga;
+/// Precio por carga (COP) → US$ por libra de café verde, con la TRM indicada.
+double copCargaToUsdLb(num cop, [double copPerUsd = fallbackCopPerUsd]) => cop / copPerUsd / lbGreenPerCarga;
+
+/// US$ por libra de café verde → precio por carga (COP), con la TRM indicada.
+double usdLbToCopCarga(double usdLb, [double copPerUsd = fallbackCopPerUsd]) => usdLb * lbGreenPerCarga * copPerUsd;
 
 /// Número con separadores: en → 1,234.56 · es → 1.234,56
 String fmtNum(num n, [String lang = 'en', int decimals = 0]) {
@@ -86,10 +77,6 @@ String fmtDate(int ts, [String lang = 'en']) {
   return lang == 'es' ? '${d.day} ${_monthsEs[d.month - 1]} ${d.year}' : '${_monthsEn[d.month - 1]} ${d.day}, ${d.year}';
 }
 
-String fmtDuration(num sec) {
-  final s = max(0, sec.round());
-  return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
-}
 
 String firstName(String full) => full.split(' ').first;
 

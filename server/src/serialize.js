@@ -1,7 +1,9 @@
 // Convierte filas de la base de datos en el JSON que consume la app.
 const { many, one } = require('./db');
+const { mediaPath } = require('./lib/media');
 
-const img = (id) => (id ? `/images/${id}` : null);
+// Dirección firmada de una foto (ver lib/media.js).
+const img = (id) => mediaPath(id);
 const ms = (d) => (d ? new Date(d).getTime() : 0);
 
 function publicUser(u) {

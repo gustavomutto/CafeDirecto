@@ -1,135 +1,73 @@
-# CafeDirecto
-Aplicativo para celular estilo markeplace , para la venta de cafe en granos
+# CaféDirecto
 
+[![App Flutter](https://github.com/gustavomutto/CafeDirecto/actions/workflows/flutter.yml/badge.svg?branch=gustavo)](https://github.com/gustavomutto/CafeDirecto/actions/workflows/flutter.yml)
+[![Servidor](https://github.com/gustavomutto/CafeDirecto/actions/workflows/server.yml/badge.svg?branch=gustavo)](https://github.com/gustavomutto/CafeDirecto/actions/workflows/server.yml)
+
+Marketplace móvil que conecta **caficultores colombianos** con **compradores de café de especialidad** del mundo:
+perfiles de finca, lotes con fotos, chat con **traducción automática ES ⇄ EN**, negociación de precios,
+**subastas con fecha límite**, acuerdos con seguimiento, calificaciones, notificaciones y **precios del café en tiempo real**
+(precio interno de la FNC, Bolsa de Nueva York y TRM).
+
+Servidor en producción: <https://cafedirecto-production.up.railway.app> · [Política de privacidad](https://cafedirecto-production.up.railway.app/privacy)
+
+## Estructura
 
 | Carpeta | Qué es |
 | --- | --- |
-| `server/` | API en Node.js + Express + PostgreSQL (se despliega en Railway) |
-| `mobile_app/` | App en Flutter para Android y web |
+| [`mobile_app/`](mobile_app) | App Flutter (Android y web), arquitectura por capas con Provider y DTOs |
+| [`server/`](server) | API Node.js + Express + PostgreSQL, desplegada en Railway |
+| [`docs/`](docs) | Arquitectura, API, auditoría, publicación en Google Play, diccionario de datos y documentos del proyecto |
+| `.github/` | GitHub Actions (CI), Dependabot y plantilla de pull request |
 
-Servidor en producción: https://cafedirecto-production.up.railway.app (Railway despliega `server/` desde la rama `gustavo`).
+## Empezar
 
-## Correr todo en local
-
-1. Abrir Docker Desktop y crear la base de datos (solo la primera vez):
-
-```bash
-docker run -d --name cafedirecto-db -e POSTGRES_USER=cafe -e POSTGRES_PASSWORD=cafe_local -e POSTGRES_DB=cafedirecto -p 127.0.0.1:5432:5432 -v cafedirecto-pgdata:/var/lib/postgresql/data postgres:16-alpine
-```
-
-Las siguientes veces basta con `docker start cafedirecto-db`.
-
-2. Arrancar la API (puerto 3000). En `server/` ejecutar `npm install` la primera vez y luego `start-local.cmd` (doble clic, o `.\start-local.cmd` en la terminal). Al iniciar crea o actualiza las tablas.
-
-3. Arrancar la app apuntando a la API local:
+**App** (Android Studio con Flutter):
 
 ```bash
 cd mobile_app
-flutter run -d chrome --dart-define=API_URL=http://localhost:3000
+flutter pub get
+flutter run                      # usa el servidor de Railway
 ```
 
-En local, los códigos para recuperar la contraseña se muestran en la terminal de la API (no se envían correos).
+**Servidor en local** (Node 20+ y PostgreSQL; con Docker es lo más fácil):
 
-## Variables del servidor
-
-| Variable | Obligatoria | Para qué |
-| --- | --- | --- |
-| `DATABASE_URL` | Sí | Conexión a PostgreSQL (Railway la da al agregar la base) |
-| `JWT_SECRET` | Sí en producción | Firma las sesiones. Texto aleatorio de 48+ caracteres. Sin ella el servidor no arranca en Railway |
-| `RESEND_API_KEY` | Sí en producción | Envío de correos con [Resend](https://resend.com) (códigos de recuperación de contraseña) |
-| `MAIL_FROM` | Sí en producción | Remitente, por ejemplo `CaféDirecto <no-reply@tudominio.com>` (dominio verificado en Resend) |
-| `DEEPL_API_KEY` o `GOOGLE_TRANSLATE_API_KEY` | No | Traducción de mayor calidad. Sin ellas se usa MyMemory (gratis, con límites) |
-| `MYMEMORY_EMAIL` | No | Sube el límite diario gratuito de MyMemory |
-| `PORT` | No | Puerto (Railway lo define solo) |
-
-## Arquitectura (v3)
-
-### App (`mobile_app/lib`) · capas con Provider y DTOs
-
-```
-lib/
-├─ main.dart            arranque: avisos del teléfono, sesión guardada, runApp
-├─ app/                 di.dart (inyección de dependencias), router.dart (rutas), app.dart (MaterialApp + providers)
-├─ core/                config (URL del servidor), network (ApiClient), logging (AppLogger),
-│                       notifications (avisos del teléfono), theme, utils (formatos, lectura de JSON), constants
-├─ domain/
-│  ├─ entities/         clases puras: Lot, Auction, Bid, Agreement, ChatMessage, AppNotification, CoffeeMarket…
-│  └─ repositories/     contratos (interfaces): LotRepository, AuctionRepository, ChatRepository…
-├─ data/
-│  ├─ dtos/             JSON del servidor ⇄ entidades (LotDto.fromJson(...).toEntity(), LotInputDto.toJson(...))
-│  ├─ datasources/      remote/ (una por módulo de la API) y local/ (token en el teléfono)
-│  └─ repositories/     implementación de los contratos (usa datasources + DTOs)
-└─ presentation/
-   ├─ providers/        SessionProvider, NotificationsProvider, MarketProvider, AuctionDetailController
-   ├─ screens/          una carpeta por módulo (auth, home, explore, lot, chat, orders, auctions, market, notifications…)
-   └─ widgets/          piezas reutilizables
+```bash
+docker run -d --name cafedirecto-db -e POSTGRES_USER=cafe -e POSTGRES_PASSWORD=cafe_local -e POSTGRES_DB=cafedirecto -p 127.0.0.1:5432:5432 postgres:16-alpine
+cd server
+npm install
+start-local.cmd                  # Windows (o: DATABASE_URL=postgres://cafe:cafe_local@localhost:5432/cafedirecto npm start)
+npm test                         # 135 pruebas de la API
 ```
 
-Regla: las pantallas **nunca** llaman HTTP. Usan un provider o un repositorio (`context.repo<LotRepository>()`),
-el repositorio usa una fuente de datos y la fuente de datos usa `ApiClient`. Así cada capa se puede cambiar o probar sola.
-Los registros (`AppLogger`) se ven en la pestaña **Run / Logcat** de Android Studio con el prefijo `CafeDirecto.`.
+Para apuntar la app al servidor local: `flutter run --dart-define=API_URL=http://10.0.2.2:3000` (emulador)
+o la IP de tu computador en la red wifi (celular).
 
-### Servidor (`server/src`)
+## Funciones
 
-```
-index.js        arranque (migra la base, inicia el proceso de subastas, abre el puerto)
-app.js          Express: middlewares y montaje de rutas
-routes/         capa HTTP: auth, account, images, lots, auctions, conversations, agreements, notifications, market
-services/       reglas de negocio compartidas: agreements, auctions, conversations, notifications, market
-serialize.js    filas de la base → JSON (DTO) que consume la app
-lib/http.js     errores con código, lectura segura del cuerpo y transacciones
-db.js · auth.js · translate.js · mail.js · ratelimit.js
-test/           pruebas de la API contra PostgreSQL real (`npm test`)
-```
+| Caficultor | Comprador |
+| --- | --- |
+| Perfil de finca bilingüe con fotos y certificaciones | Explorar lotes con filtros (región, proceso, variedad, SCA, altitud, en subasta) |
+| Publicar lotes (precio por libra o por carga, con la TRM del día) | Chat traducido con dictado por voz y fotos |
+| Ver qué compradores se interesaron en cada lote y escribirles | Pujar en subastas y ver si va ganando |
+| Abrir subastas y elegir la oferta ganadora | Cotizar, contraofertar y confirmar acuerdos |
+| Marcar el despacho; calificar | Confirmar la entrega; reporte de calidad; calificar |
+| Precio interno FNC, bolsa y calculadora "¿cuánto vale mi café?" | Precio de referencia en US$/lb y dólar por país |
 
-## Novedades de la v3
+## Documentación
 
-- **Subastas con fecha límite.** El caficultor abre una subasta desde su lote (precio base, incremento mínimo, sacos,
-  duración y entrega). Los compradores pujan por libra y ven la oferta más alta; los demás compradores aparecen como
-  "Comprador 1, 2…". Si alguien oferta en los últimos 2 minutos, el cierre se alarga 2 minutos. El caficultor elige
-  la oferta que quiera (antes o después del cierre; tiene 7 días) y se registra el **acuerdo** y el chat con el ganador.
-- **Notificaciones (campanita + aviso del teléfono).** Cuando un comprador abre un lote, el caficultor recibe
-  "👀 *Fulano* está interesado en tu café" (máximo una vez por comprador y lote cada 24 h) y puede ver la lista de
-  interesados y escribirles. También avisa: nueva oferta, te superaron, ganaste/perdiste, subasta terminada,
-  cotizaciones, acuerdo registrado, cambios de estado y calificaciones.
-- **Precio del café.** Precio interno de referencia de la FNC (por carga, kg y arroba), contrato C de la Bolsa de
-  Nueva York (con variación e histórico), TRM oficial, prima del café colombiano, calculadora "¿cuánto vale mi café?"
-  y el dólar en 20 países de América Latina (con la bolsa convertida a cada moneda).
-- **Acuerdos** muestra las subastas abiertas y el acceso a subastar o pujar.
-- **GitHub Actions** analiza, prueba y compila el APK de la app, y prueba la API con PostgreSQL en cada cambio.
+- [Arquitectura](docs/ARQUITECTURA.md) — capas de la app y del servidor, flujos y seguridad
+- [API](docs/API.md) — todas las rutas, cuerpos, respuestas y variables de entorno
+- [Auditoría técnica](docs/AUDITORIA.md) — hallazgos, correcciones y pendientes
+- [Publicar en Google Play](docs/PUBLICAR_EN_PLAY.md) — firma, paquete y datos de privacidad
+- [Cómo contribuir](CONTRIBUTING.md) — ramas, pruebas y reglas del código
+- [Diccionario de datos](docs/CafeDirecto_Diccionario_de_Datos.docx)
 
-### Endpoints nuevos
+## Variables del servidor (Railway)
 
-| Método | Ruta | Para qué |
-| --- | --- | --- |
-| GET | `/market/coffee` | Precio interno FNC, bolsa NY, TRM, conversiones e histórico (público) |
-| GET | `/auctions` · `/auctions?mine=1` | Subastas activas · mis subastas o en las que pujé |
-| POST | `/lots/:id/auction` | Abrir subasta (`basePriceLb, minIncrementLb, sacks, durationHours, incoterm`) |
-| GET | `/auctions/:id` | Detalle con ofertas |
-| POST | `/auctions/:id/bids` | Pujar (`priceLb`) |
-| POST | `/auctions/:id/award` | Elegir oferta ganadora (`bidId`) → crea el acuerdo |
-| POST | `/auctions/:id/cancel` | Cancelar |
-| GET | `/lots/:id/interest` | Compradores que vieron el lote (solo el dueño) |
-| GET | `/notifications` · `/notifications/unread` | Avisos (`?after=ID` para los nuevos) |
-| POST | `/notifications/read` | Marcar leídos (`ids` o `all`) |
+`DATABASE_URL` y `JWT_SECRET` son obligatorias. Para recuperar contraseñas: `RESEND_API_KEY` y `MAIL_FROM`.
+Opcionales: `DEEPL_API_KEY` o `GOOGLE_TRANSLATE_API_KEY`, `MYMEMORY_EMAIL`, `MEDIA_SECRET`, `CORS_ORIGINS`, `CONTACT_EMAIL`.
+Detalle en [docs/API.md](docs/API.md#variables-de-entorno).
 
-## Cambios de la v1.3
+## Equipo
 
-- Eliminar cuenta desde el perfil (exigido por Google Play). Pide la contraseña. Se borran perfil, lotes, conversaciones y fotos; si hay acuerdos registrados, se conservan para la otra parte sin datos personales.
-- Recuperar contraseña con un código de 6 dígitos por correo (vence en 15 minutos, máximo 5 intentos). Al cambiarla se cierran las sesiones abiertas en otros dispositivos.
-- `JWT_SECRET` obligatoria en producción.
-- Límite de intentos: inicio de sesión (10 por correo y 50 por IP cada 15 min), registro (10 por hora), recuperación (10 por hora por IP y 3 por correo) y traducción (60 por minuto por usuario).
-- La app deja de consultar el servidor cuando está en segundo plano, y la lista de chats solo se actualiza cuando está a la vista.
-- Pulido: sin textos de "demo", botón de estado del pedido con estilo normal, íconos en lugar de emojis en los formularios, título y colores correctos en la versión web.
-
-## Al desplegar en Railway
-
-1. Agregar `JWT_SECRET`, `RESEND_API_KEY` y `MAIL_FROM` en las variables del servicio antes de desplegar.
-2. Al cambiar `JWT_SECRET`, todas las sesiones abiertas se cierran y los usuarios deben volver a entrar una vez.
-3. Las tablas nuevas se crean solas al arrancar.
-
-## Pendiente antes de publicar en Google Play
-
-- Firma de lanzamiento: crear tu propia clave (keystore) y configurarla en `mobile_app/android/app/build.gradle.kts`. Hoy firma con la clave de depuración.
-- Ícono propio: hoy es el ícono por defecto de Flutter.
-- Política de privacidad publicada en una URL (Google Play la pide, y la app usa el micrófono).
+Gustavo Mutto ([@gustavomutto](https://github.com/gustavomutto)) · Robert ([@ROBERTOCGF](https://github.com/ROBERTOCGF)) · Marlon Martínez ([@MWNEW-928](https://github.com/MWNEW-928)) — Unicesar.

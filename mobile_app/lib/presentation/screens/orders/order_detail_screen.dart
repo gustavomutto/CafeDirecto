@@ -31,6 +31,8 @@ class OrderDetailScreen extends StatelessWidget {
             final theirs = a.ratingBy(app.isFarmer ? 'buyer' : 'farmer');
             final otherName = app.isFarmer ? a.buyerName : a.farmerName;
             final next = a.status < 3 ? statusSteps[a.status + 1] : null;
+            // Despacho (1→2) lo marca el caficultor; entrega (2→3), el comprador.
+            final canAdvance = (a.status == 1 && app.isFarmer) || (a.status == 2 && !app.isFarmer);
 
             Widget ratingBlock(Rating r, String title) => Container(
                   margin: const EdgeInsets.only(top: 10),
@@ -71,11 +73,21 @@ class OrderDetailScreen extends StatelessWidget {
                     CardBox(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                         StatusTimeline(status: a.status, history: a.history, vertical: true),
-                        if (next != null)
+                        if (next != null && canAdvance)
                           Btn('${app.tr('Marcar como', 'Mark as')} “${next.of(app.lang)}”',
                               icon: next.icon, kind: BtnKind.outline, block: true, onPressed: advance),
-                        FinePrint(app.tr('Cualquiera de las dos partes puede actualizar el estado. La logística y el pago se gestionan fuera de CaféDirecto.',
-                            'Either party can update the status. Logistics and payment are handled outside CaféDirecto.')),
+                        if (next != null && !canAdvance)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, bottom: 4),
+                            child: Text(
+                              a.status == 1
+                                  ? app.tr('Esperando que el caficultor despache el café.', 'Waiting for the farmer to ship the coffee.')
+                                  : app.tr('Esperando que el comprador confirme que recibió el café.', 'Waiting for the buyer to confirm delivery.'),
+                              style: p.text(weight: FontWeight.w700, color: p.warm),
+                            ),
+                          ),
+                        FinePrint(app.tr('El caficultor marca el despacho y el comprador confirma la entrega. La logística y el pago se gestionan fuera de CaféDirecto.',
+                            'The farmer marks the shipment and the buyer confirms delivery. Logistics and payment are handled outside CaféDirecto.')),
                       ]),
                     ),
                     SectionTitle(app.tr('Calificaciones', 'Ratings')),

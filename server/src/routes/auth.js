@@ -8,9 +8,14 @@ const { sign } = require('../auth');
 const { limit, hit } = require('../ratelimit');
 const { sendMail } = require('../mail');
 const S = require('../serialize');
-const { h, HttpError, bad, conflict, str, MIN, HOUR, tx } = require('../lib/http');
+const { h, HttpError, bad, conflict, str, MIN, HOUR, MIN_PASSWORD, tx } = require('../lib/http');
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+// Hash de relleno: si el correo no existe igual se compara, para que el tiempo de respuesta
+// no revele qué correos están registrados.
+const DUMMY_HASH = bcrypt.hashSync('cafedirecto-relleno', 10);
+const weak = (p) => p.length < MIN_PASSWORD || !/[A-Za-zÁÉÍÓÚáéíóúÑñ]/.test(p) || !/\d/.test(p);
+const WEAK_MSG = `La contraseña debe tener al menos ${MIN_PASSWORD} caracteres, con letras y números`;
 const r = express.Router();
 
 r.post('/auth/register', limit('register', 10, HOUR), h(async (req, res) => {
@@ -20,7 +25,7 @@ r.post('/auth/register', limit('register', 10, HOUR), h(async (req, res) => {
   const name = str(req.body.name, 120);
   const lang = req.body.lang === 'en' ? 'en' : req.body.lang === 'es' ? 'es' : role === 'buyer' ? 'en' : 'es';
   if (!EMAIL_RE.test(email)) throw bad('Correo inválido');
-  if (password.length < 6) throw bad('La contraseña debe tener al menos 6 caracteres');
+  if (weak(password)) throw bad(WEAK_MSG);
   if (!['farmer', 'buyer'].includes(role)) throw bad('Rol inválido');
   if (!name) throw bad('Escribe tu nombre');
   if (await one('SELECT 1 FROM users WHERE email = $1', [email])) throw conflict('Ese correo ya está registrado');
@@ -50,9 +55,8 @@ const loginEmail = (req) => `${req.ip}:${str(req.body.email, 200).toLowerCase()}
 r.post('/auth/login', limit('login-ip', 50, 15 * MIN), limit('login', 10, 15 * MIN, loginEmail), h(async (req, res) => {
   const email = str(req.body.email, 200).toLowerCase();
   const u = await one('SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL', [email]);
-  if (!u || !(await bcrypt.compare(String(req.body.password || ''), u.password_hash))) {
-    throw new HttpError(401, 'Correo o contraseña incorrectos');
-  }
+  const ok = await bcrypt.compare(String(req.body.password || ''), u ? u.password_hash : DUMMY_HASH);
+  if (!u || !ok) throw new HttpError(401, 'Correo o contraseña incorrectos');
   res.json({ token: sign(u), user: S.meUser(u) });
 }));
 
@@ -92,7 +96,7 @@ r.post('/auth/reset', limit('reset-ip', 20, 15 * MIN), h(async (req, res) => {
   const email = str(req.body.email, 200).toLowerCase();
   const code = str(req.body.code, 12).replace(/\s/g, '');
   const password = String(req.body.password || '');
-  if (password.length < 6) throw bad('La contraseña debe tener al menos 6 caracteres');
+  if (weak(password)) throw bad(WEAK_MSG);
   const invalid = bad('El código no es válido o ya venció. Pide uno nuevo.');
   const u = await one('SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL', [email]);
   const pr = u && (await one('SELECT * FROM password_resets WHERE user_id = $1', [u.id]));

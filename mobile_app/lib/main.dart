@@ -6,6 +6,7 @@
 //   data/          DTOs (JSON ⇄ entidades), fuentes de datos (API, teléfono) e implementación de repositorios
 //   presentation/  providers (estado), pantallas y widgets
 //   app/           inyección de dependencias, rutas y el widget principal
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -18,9 +19,15 @@ import 'presentation/providers/app_context.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  // Errores de dibujo (Flutter) y errores asíncronos sin capturar: quedan en el registro
+  // en lugar de cerrar la app sin dejar rastro.
   FlutterError.onError = (details) {
     AppLogger.e('Error de Flutter', tag: 'Flutter', error: details.exception, stack: details.stack);
     FlutterError.presentError(details);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AppLogger.e('Error sin capturar', tag: 'App', error: error, stack: stack);
+    return true;
   };
 
   // Al tocar un aviso del teléfono, abrir la pantalla correspondiente.

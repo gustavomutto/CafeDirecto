@@ -1,0 +1,22 @@
+# Dependabot revisa cada semana si hay versiones nuevas (sobre todo de seguridad)
+# y abre un pull request por cada actualización. CI las prueba antes de fusionar.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /server
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    target-branch: gustavo
+    groups:
+      dependencias-servidor:
+        patterns: ['*']
+        update-types: [minor, patch]
+  - package-ecosystem: pub
+    directory: /mobile_app
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    target-branch: gustavo
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
+    target-branch: gustavo

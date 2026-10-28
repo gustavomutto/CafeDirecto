@@ -1,7 +1,7 @@
 name: cafedirecto
 description: "CaféDirecto · conecta caficultores colombianos con compradores de café de especialidad."
 publish_to: 'none'
-version: 3.0.0+4
+version: 3.1.0+5
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -12,8 +12,10 @@ dependencies:
   # Llamadas a la API en Railway
   http: ^1.2.0
   http_parser: ^4.0.2
-  # Guarda la sesión (token) en el teléfono
+  # Preferencias simples del teléfono (último aviso mostrado)
   shared_preferences: ^2.2.0
+  # Token de sesión cifrado (Android Keystore / iOS Keychain)
+  flutter_secure_storage: ^11.2.0
   # Elegir fotos de la galería o tomarlas con la cámara
   image_picker: ^1.1.0
   # Dictado por voz (reconocimiento de voz del teléfono)

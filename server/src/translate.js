@@ -39,14 +39,38 @@ async function google(text, from, to) {
   return j.data.translations[0].translatedText;
 }
 
-async function mymemory(text, from, to) {
-  const params = new URLSearchParams({ q: text.slice(0, 480), langpair: `${from}|${to}` });
+/** Parte un texto largo en trozos de hasta `max` caracteres, cortando en fin de frase o espacio. */
+function chunks(text, max = 450) {
+  const out = [];
+  let rest = text;
+  while (rest.length > max) {
+    const slice = rest.slice(0, max);
+    const cut = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('? '), slice.lastIndexOf('! '), slice.lastIndexOf('\n'));
+    const at = cut > max * 0.5 ? cut + 1 : (slice.lastIndexOf(' ') > 0 ? slice.lastIndexOf(' ') : max);
+    out.push(rest.slice(0, at).trim());
+    rest = rest.slice(at).trim();
+  }
+  if (rest) out.push(rest);
+  return out;
+}
+
+async function mymemoryOne(text, from, to) {
+  const params = new URLSearchParams({ q: text, langpair: `${from}|${to}` });
   if (process.env.MYMEMORY_EMAIL) params.set('de', process.env.MYMEMORY_EMAIL);
   const res = await withTimeout(fetch(`https://api.mymemory.translated.net/get?${params}`));
   if (!res.ok) throw new Error(`MyMemory ${res.status}`);
   const j = await res.json();
   if (j.responseStatus !== 200 && j.responseStatus !== '200') throw new Error(`MyMemory ${j.responseStatus}`);
   return j.responseData.translatedText;
+}
+
+// MyMemory acepta hasta ~500 caracteres por consulta: los textos largos se traducen por partes
+// (antes se cortaban y el resto del mensaje quedaba sin traducir).
+async function mymemory(text, from, to) {
+  const parts = chunks(text);
+  const out = [];
+  for (const part of parts) out.push(await mymemoryOne(part, from, to));
+  return out.join(' ');
 }
 
 function providers() {
@@ -91,4 +115,4 @@ function providerName() {
   return providers()[0][0];
 }
 
-module.exports = { translate, both, providerName };
+module.exports = { translate, both, providerName, chunks };

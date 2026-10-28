@@ -1,11 +1,13 @@
 // Publicar lote (caficultor) — RF-06. Formulario de pasos grandes y numerados.
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/constants/catalog.dart';
 import '../../providers/app_context.dart';
 import '../../../core/utils/format.dart';
 import '../../../domain/entities/entities.dart';
 import '../../../domain/repositories/lot_repository.dart';
+import '../../providers/market_provider.dart';
 import '../../widgets/common.dart';
 import '../../widgets/photo_picker.dart';
 
@@ -41,6 +43,8 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
   @override
   void initState() {
     super.initState();
+    // La TRM del día para convertir el precio por carga a dólares.
+    WidgetsBinding.instance.addPostFrameCallback((_) => context.read<MarketProvider>().ensureLoaded());
     if (editing) {
       _loading = true;
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadLot());
@@ -80,7 +84,10 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
     super.dispose();
   }
 
-  double get _effectivePriceLb => unit == 'lb' ? priceLb : round2(copCargaToUsdLb(priceCarga));
+  /// TRM del día (la entrega el servidor); si no se pudo consultar, una tasa de respaldo.
+  double get _copPerUsd => context.read<MarketProvider>().copPerUsd ?? fallbackCopPerUsd;
+
+  double get _effectivePriceLb => unit == 'lb' ? priceLb : round2(copCargaToUsdLb(priceCarga, _copPerUsd));
 
   Future<void> _publish() async {
     final app = context.session;
@@ -122,6 +129,7 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
   @override
   Widget build(BuildContext context) {
     final p = context.pal;
+    context.watch<MarketProvider>(); // redibuja cuando llega la TRM
 
     if (_loading) {
       return Scaffold(backgroundColor: p.bg, body: const SafeArea(child: Column(children: [TopBar(), Expanded(child: LoadingView())])));
@@ -285,8 +293,9 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
                       label: 'por carga (125 kg pergamino)',
                     ),
                     const SizedBox(height: 8),
-                    Text('≈ ${fmtUSD(lb, 'es')} por libra de café verde (aprox.)', textAlign: TextAlign.center, style: p.muted(size: 14)),
+                    Text('≈ ${fmtUSD(lb, 'es')} por libra de café verde', textAlign: TextAlign.center, style: p.muted(size: 14)),
                   ],
+                  _RateHint(priceLb: lb),
                   TotalBox('Si vende todo el lote', fmtUSD(quoteTotal(lb, sacks.round()), 'es', 0)),
                 ]),
                 section([
@@ -339,6 +348,30 @@ class _PublishLotScreenState extends State<PublishLotScreen> {
       bottomNavigationBar: ScreenFooter(children: [
         Expanded(child: Btn(_busy ? 'Guardando…' : (editing ? 'Guardar cambios' : 'Publicar lote'), icon: Icons.send_rounded, large: true, block: true, onPressed: (sca < 80 || _busy) ? null : _publish)),
       ]),
+    );
+  }
+}
+
+/// Referencia del mercado debajo del precio: TRM usada y comparación con el precio interno FNC.
+class _RateHint extends StatelessWidget {
+  final double priceLb;
+  const _RateHint({required this.priceLb});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.pal;
+    final m = context.watch<MarketProvider>();
+    final rate = m.copPerUsd;
+    final fnc = m.coffee?.internal?.copPerCarga;
+    final mine = usdLbToCopCarga(priceLb, rate ?? fallbackCopPerUsd);
+    final lines = <String>[
+      rate == null ? 'Dólar de referencia: ${fmtCOP(fallbackCopPerUsd)} (no se pudo consultar la TRM de hoy)' : 'TRM de hoy: ${fmtCOP(rate)} por dólar',
+      'Equivale a ${fmtCOP(mine)} por carga',
+      if (fnc != null) 'Precio interno FNC hoy: ${fmtCOP(fnc)} por carga (${mine >= fnc ? '+' : '−'}${fmtNum(((mine - fnc).abs() / fnc * 100), 'es', 0)} %)',
+    ];
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(children: [for (final l in lines) Text(l, textAlign: TextAlign.center, style: p.muted(size: 13))]),
     );
   }
 }

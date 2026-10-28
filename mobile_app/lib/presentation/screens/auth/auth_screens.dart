@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/catalog.dart';
+import '../../../core/utils/validators.dart';
 import '../../../domain/entities/user.dart';
 import '../market/market_widgets.dart';
 import '../../providers/app_context.dart';
@@ -196,7 +197,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _reset() => _run(() async {
         if (_code.text.trim().length < 6) throw 'Escribe el código de 6 dígitos · Enter the 6-digit code';
-        if (_pass.text.length < 6) throw 'La contraseña debe tener al menos 6 caracteres · At least 6 characters';
+        final problem = passwordProblem(_pass.text);
+        if (problem != null) throw problem;
         final app = context.session;
         await app.resetPassword(_email.text.trim(), _code.text.trim(), _pass.text);
         if (!mounted) return;
@@ -394,7 +396,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       const SizedBox(height: 16),
       _Field(label: t('Tu nombre', 'Full name'), icon: Icons.person_outline_rounded, controller: c['name']!),
       _Field(label: t('Correo', 'Email'), icon: Icons.mail_outline_rounded, controller: c['email']!, type: TextInputType.emailAddress),
-      _Field(label: t('Contraseña (mínimo 6)', 'Password (min. 6)'), icon: Icons.lock_outline_rounded, controller: c['password']!, obscure: true),
+      _Field(label: t('Contraseña (8+ con letras y números)', 'Password (8+ letters & numbers)'), icon: Icons.lock_outline_rounded, controller: c['password']!, obscure: true),
       _Field(label: t('Celular (opcional)', 'Phone (optional)'), icon: Icons.phone_android_rounded, controller: c['phone']!, type: TextInputType.phone),
       if (farmer) ...[
         _Field(label: t('Nombre de la finca', 'Farm name'), icon: Icons.cottage_outlined, controller: c['farmName']!),

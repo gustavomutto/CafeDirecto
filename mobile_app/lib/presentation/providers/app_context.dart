@@ -50,39 +50,6 @@ class PaletteOverride extends InheritedWidget {
 /// Llave global del navegador (para navegar desde fuera de un widget, por ejemplo al tocar un aviso).
 final navKey = GlobalKey<NavigatorState>();
 
-/// Lleva la cuenta de las pantallas abiertas para saber en cuál estamos.
-class RouteTracker extends NavigatorObserver {
-  final List<Route<dynamic>> _stack = [];
-
-  String? get topPageName {
-    for (final r in _stack.reversed) {
-      if (r is PageRoute) return r.settings.name;
-    }
-    return null;
-  }
-
-  @override
-  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) => _stack.add(route);
-
-  @override
-  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) => _stack.remove(route);
-
-  @override
-  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) => _stack.remove(route);
-
-  @override
-  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
-    final i = oldRoute == null ? -1 : _stack.indexOf(oldRoute);
-    if (i >= 0 && newRoute != null) {
-      _stack[i] = newRoute;
-    } else if (newRoute != null) {
-      _stack.add(newRoute);
-    }
-  }
-}
-
-final routeTracker = RouteTracker();
-
 /// Vuelve a la pantalla principal (pestañas).
 void goHome({int tab = 0}) {
   final nav = navKey.currentState;

@@ -41,6 +41,10 @@ class NetImg extends StatelessWidget {
           ),
         );
     final url = mediaUrl(src);
+    // Decodifica la foto al tamaño en que se muestra (no a 1600 px): menos memoria y listas más fluidas.
+    final dpr = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2;
+    final shownWidth = width ?? MediaQuery.maybeSizeOf(context)?.width;
+    final cacheWidth = shownWidth == null || !shownWidth.isFinite ? null : (shownWidth * dpr).round().clamp(64, 2048);
     Widget img = url == null
         ? fb()
         : Image.network(
@@ -48,6 +52,8 @@ class NetImg extends StatelessWidget {
             width: width,
             height: height,
             fit: fit,
+            cacheWidth: cacheWidth,
+            gaplessPlayback: true,
             errorBuilder: (_, __, ___) => fb(),
             loadingBuilder: (ctx, child, progress) =>
                 progress == null ? child : Container(width: width, height: height, color: p.surface2),
@@ -152,9 +158,9 @@ class VerifiedBadge extends StatelessWidget {
   }
 }
 
-enum BtnKind { primary, outline, ghost, light, demo }
+enum BtnKind { primary, outline, ghost, light, soft }
 
-/// Botón de la app (variantes: primario, contorno, fantasma, claro, demo).
+/// Botón de la app (variantes: primario, contorno, fantasma, claro, suave).
 class Btn extends StatelessWidget {
   final String label;
   final IconData? icon;
@@ -200,7 +206,7 @@ class Btn extends StatelessWidget {
         bg = Colors.white;
         fg = p.primary;
         break;
-      case BtnKind.demo:
+      case BtnKind.soft:
         bg = p.warmSoft;
         fg = p.warm;
         side = BorderSide(color: p.warm.withValues(alpha: 0.5), width: 1.2);

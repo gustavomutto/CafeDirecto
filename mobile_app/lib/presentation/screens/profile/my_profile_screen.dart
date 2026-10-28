@@ -36,6 +36,7 @@ class MyProfileScreen extends StatelessWidget {
         link(Icons.trending_up_rounded, app.tr('Precio del café y del dólar', 'Coffee & dollar prices'), () => context.go('/market')),
         link(Icons.gavel_rounded, app.tr('Subastas', 'Auctions'), () => context.go('/auctions')),
         link(Icons.notifications_none_rounded, app.tr('Notificaciones', 'Notifications'), () => context.go('/notifications')),
+        link(Icons.shield_outlined, app.tr('Privacidad', 'Privacy'), () => context.go('/privacy')),
         link(Icons.logout_rounded, app.tr('Cerrar sesión', 'Log out'), () async {
           final ok = await showDialog<bool>(
             context: context,

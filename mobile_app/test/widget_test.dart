@@ -2,6 +2,8 @@
 // Ejecutar con:  flutter test
 import 'package:cafedirecto/core/constants/countries.dart';
 import 'package:cafedirecto/core/utils/format.dart';
+import 'package:cafedirecto/core/utils/media.dart';
+import 'package:cafedirecto/core/utils/validators.dart';
 import 'package:cafedirecto/data/dtos/auction_dto.dart';
 import 'package:cafedirecto/data/dtos/chat_dto.dart';
 import 'package:cafedirecto/data/dtos/exchange_rate_dto.dart';
@@ -25,8 +27,26 @@ void main() {
     expect(quoteTotal(5.45, 20).round(), 16821);
   });
 
-  test('conversión de precio por carga a USD/lb', () {
-    expect(copCargaToUsdLb(3200000), closeTo(3.95, 0.05));
+  test('conversión de precio por carga a USD/lb con la TRM del día', () {
+    // 1 carga (125 kg pergamino, factor 94) ≈ 205,2 lb de café verde
+    expect(lbGreenPerCarga, closeTo(205.22, 0.01));
+    // con la TRM real (3.147,40) y con la tasa de respaldo (3.900)
+    expect(copCargaToUsdLb(2065000, 3147.4), closeTo(3.197, 0.001));
+    expect(copCargaToUsdLb(3200000), closeTo(4.0, 0.01));
+    expect(usdLbToCopCarga(copCargaToUsdLb(2065000, 3147.4), 3147.4), closeTo(2065000, 1));
+  });
+
+  test('id de una foto a partir de su dirección firmada', () {
+    expect(imageIdFromUrl('/images/42?s=AbCdEfGh12345678'), 42);
+    expect(imageIdFromUrl('https://api.example.com/images/7?s=x'), 7);
+    expect(imageIdFromUrl('/otra/cosa'), isNull);
+    expect(imageIdFromUrl(null), isNull);
+  });
+
+  test('contraseña: 8 caracteres con letras y números', () {
+    expect(passwordProblem('123456'), isNotNull);
+    expect(passwordProblem('abcdefgh'), isNotNull);
+    expect(passwordProblem('cafe1234'), isNull);
   });
 
   test('lectura de un mensaje de la API', () {
