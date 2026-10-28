@@ -10,6 +10,12 @@ perfiles de finca, lotes con fotos, chat con **traducción automática ES ⇄ EN
 
 Servidor en producción: <https://cafedirecto-production.up.railway.app> · [Política de privacidad](https://cafedirecto-production.up.railway.app/privacy)
 
+## Descargar la app (Android)
+
+**[⬇️ Descargar CafeDirecto.apk](https://github.com/gustavomutto/CafeDirecto/releases/latest/download/CafeDirecto.apk)**
+— siempre la última versión. Ábrelo desde el celular, permite *Instalar apps desconocidas* y luego **Crear cuenta**
+(caficultor o comprador). Pasos y novedades de cada versión en [Releases](https://github.com/gustavomutto/CafeDirecto/releases).
+
 ## Estructura
 
 | Carpeta | Qué es |

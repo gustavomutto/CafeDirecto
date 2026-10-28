@@ -2,9 +2,12 @@ name: App Flutter
 
 on:
   push:
+    branches: ['**'] # las etiquetas no disparan esta revisión; las versiones salen por "release"
     paths: ['mobile_app/**', '.github/workflows/flutter.yml']
   pull_request:
     paths: ['mobile_app/**']
+  release:
+    types: [published]
   workflow_dispatch:
 
 concurrency:
@@ -15,6 +18,8 @@ jobs:
   analizar-probar-compilar:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: write # solo lo usa el paso "Publicar versión" (adjuntar el APK al Release)
     defaults:
       run:
         working-directory: mobile_app
@@ -72,3 +77,35 @@ jobs:
           name: cafedirecto-apk
           path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
+
+      # Al publicar un Release (GitHub → Releases → Draft a new release → etiqueta v3.1.1 → Publish)
+      # se adjunta el APK. Enlace fijo para descargar siempre la última versión, sin cuenta de GitHub:
+      #   https://github.com/<dueño>/<repo>/releases/latest/download/CafeDirecto.apk
+      - name: Publicar versión en Releases
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk CafeDirecto.apk
+          cat > notas.md <<'EOF'
+          ## Instalar en Android
+
+          1. Desde el celular, toca **CafeDirecto.apk** (abajo, en *Assets*) para descargarlo.
+          2. Ábrelo. Si Android lo pide, permite **Instalar apps desconocidas** para el navegador.
+          3. Si aparece Play Protect, toca **Más detalles → Instalar de todas formas** (la app aún no está en Play Store).
+          4. Si ya tenías una versión anterior y dice *"La app no se instaló"*, desinstálala primero.
+             No se pierde nada: los datos están en el servidor; solo vuelves a iniciar sesión.
+
+          ## Entrar
+
+          - **Crear cuenta**: elige *caficultor* o *comprador*. Contraseña de 8 o más caracteres con letras y números.
+          - Los caficultores publican lotes desde **Inicio**; los compradores ven todos los lotes publicados en **Explorar**.
+          EOF
+          gh release upload "$TAG" CafeDirecto.apk --clobber
+          # si el Release se publicó sin descripción, se ponen las instrucciones de instalación
+          if [ -z "$(gh release view "$TAG" --json body --jq .body)" ]; then
+            gh release edit "$TAG" --notes-file notas.md
+          fi
+          echo "::notice title=APK publicado::https://github.com/$GH_REPO/releases/latest/download/CafeDirecto.apk"
