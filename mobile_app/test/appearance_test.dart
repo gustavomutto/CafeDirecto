@@ -5,7 +5,9 @@ import 'package:cafedirecto/core/theme/palette.dart';
 import 'package:cafedirecto/data/datasources/local/appearance_local_datasource.dart';
 import 'package:cafedirecto/data/repositories/appearance_repository_impl.dart';
 import 'package:cafedirecto/domain/repositories/appearance_repository.dart';
+import 'package:cafedirecto/domain/repositories/catalog_repository.dart';
 import 'package:cafedirecto/presentation/providers/appearance_provider.dart';
+import 'package:cafedirecto/presentation/providers/catalog_provider.dart';
 import 'package:cafedirecto/presentation/providers/session_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +25,19 @@ class _MemoryAppearance implements AppearanceRepository {
   Future<void> save(AppearanceSettings s) async {
     stored = s;
     saves++;
+  }
+}
+
+class _FakeCatalog implements CatalogRepository {
+  List<String>? cached;
+  List<String>? server;
+  _FakeCatalog({this.cached, this.server});
+  @override
+  Future<List<String>?> cachedRegions() async => cached;
+  @override
+  Future<List<String>> fetchRegions() async {
+    if (server == null) throw Exception('sin internet');
+    return server!;
   }
 }
 
@@ -167,6 +182,29 @@ void main() {
       expect(buyerTypeLabel('cafeteria', 'en'), 'Coffee shop');
       expect(buyerTypeLabel('Hotel boutique', 'en'), 'Hotel boutique');
       expect(buyerTypeKey(''), isNull);
+    });
+  });
+
+  group('Regiones del servidor', () {
+    test('sin descargar todavía usa la lista de la app (incluye Cesar)', () {
+      final c = CatalogProvider(_FakeCatalog());
+      expect(c.regions, contains('Cesar'));
+      expect(c.regions, regions);
+    });
+
+    test('una región nueva del servidor aparece al abrir la app', () async {
+      final c = CatalogProvider(_FakeCatalog(server: [...regions, 'Antioquia']));
+      var changes = 0;
+      c.addListener(() => changes++);
+      await c.load();
+      expect(c.regions.last, 'Antioquia');
+      expect(changes, 1);
+    });
+
+    test('sin internet usa la última lista guardada', () async {
+      final c = CatalogProvider(_FakeCatalog(cached: ['Huila', 'Cesar', 'Caldas']));
+      await c.load();
+      expect(c.regions, ['Huila', 'Cesar', 'Caldas']);
     });
   });
 }

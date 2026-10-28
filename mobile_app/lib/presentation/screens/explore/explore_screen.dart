@@ -181,7 +181,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         ChipBtn('🔨 ${app.tr('En subasta', 'Auctions')}', active: _onlyAuctions, onTap: () => setState(() => _onlyAuctions = !_onlyAuctions)),
                         const SizedBox(width: 8),
                         ChipBtn(app.tr('Todas', 'All regions'), active: f.regions.isEmpty, onTap: () => setState(() => f = f.copy()..regions.clear())),
-                        for (final r in regions) ...[
+                        for (final r in context.regions) ...[
                           const SizedBox(width: 8),
                           ChipBtn(r, active: f.regions.contains(r), onTap: () => setState(() => f = f.copy().._toggleRegion(r))),
                         ],
