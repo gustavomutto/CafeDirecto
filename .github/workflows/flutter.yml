@@ -67,7 +67,7 @@ jobs:
           fi
           exit $code
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: cafedirecto-apk
           path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
