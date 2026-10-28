@@ -8,11 +8,16 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 
+const { securityHeaders, requestLog, corsOptions } = require('./lib/middleware');
+
 function createApp() {
   const app = express();
   // Railway pone un proxy delante: así req.ip es la IP real del usuario (para el límite de intentos).
   app.set('trust proxy', 1);
-  app.use(cors());
+  app.disable('x-powered-by');
+  app.use(securityHeaders);
+  app.use(requestLog);
+  app.use(cors(corsOptions()));
   app.use(express.json({ limit: '1mb' }));
 
   app.use(require('./routes/misc'));
@@ -32,7 +37,7 @@ function createApp() {
     if (err instanceof multer.MulterError) return res.status(400).json({ error: 'La imagen es muy grande (máx. 6 MB)' });
     if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'JSON inválido' });
     const status = err.status || 500;
-    if (status >= 500) console.error(err);
+    if (status >= 500) console.error(`Error en ${req.method} ${req.path} id=${req.id}:`, err);
     res.status(status).json({ error: status >= 500 ? 'Error del servidor' : err.message });
   });
   return app;

@@ -73,4 +73,9 @@ function startAuctionJob() {
   setTimeout(run, 5000).unref();
 }
 
-module.exports = { auctionJson, biddersOf, sweep, startAuctionJob, AWARD_WINDOW_DAYS, ANTI_SNIPING_MS };
+function stopAuctionJob() {
+  if (timer) clearInterval(timer);
+  timer = null;
+}
+
+module.exports = { auctionJson, biddersOf, sweep, startAuctionJob, stopAuctionJob, AWARD_WINDOW_DAYS, ANTI_SNIPING_MS };

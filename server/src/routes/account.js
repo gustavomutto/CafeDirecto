@@ -7,7 +7,8 @@ const { requireAuth } = require('../auth');
 const { both } = require('../translate');
 const { limit } = require('../ratelimit');
 const S = require('../serialize');
-const { h, forbidden, notFound, num, str, strArr, MIN, tx } = require('../lib/http');
+const { h, forbidden, notFound, num, str, strArr, inRange, optId, MIN, tx } = require('../lib/http');
+const { assertOwnImages } = require('../services/images');
 
 const r = express.Router();
 
@@ -22,6 +23,7 @@ r.get('/me', requireAuth, h(async (req, res) => {
 
 r.put('/me', requireAuth, h(async (req, res) => {
   const b = req.body;
+  if (b.photoId) await assertOwnImages(req.user.id, [optId(b.photoId)]);
   const u = await one(
     `UPDATE users SET name = COALESCE($2, name), phone = COALESCE($3, phone), lang = COALESCE($4, lang),
             photo_id = CASE WHEN $5::boolean THEN $6::int ELSE photo_id END
@@ -80,7 +82,14 @@ r.put('/me/profile', requireAuth, h(async (req, res) => {
   const b = req.body;
   const u = req.user;
   const lang = ['es', 'en'].includes(b.lang) ? b.lang : u.lang;
+  const thisYear = new Date().getFullYear();
+  if (b.since) inRange(b.since, 1900, thisYear, `El año debe estar entre 1900 y ${thisYear}`);
+  const gallery = (Array.isArray(b.gallery) ? b.gallery : []).map((x) => optId(x)).filter(Boolean).slice(0, 12);
+  await assertOwnImages(u.id, [optId(b.coverId), ...gallery]);
   if (u.role === 'farmer') {
+    inRange(b.altitude ?? 0, 0, 6000, 'La altitud debe estar entre 0 y 6.000 m');
+    inRange(b.hectares ?? 0, 0, 100000, 'Las hectáreas deben estar entre 0 y 100.000');
+    inRange(b.sca ?? 0, 0, 100, 'El puntaje SCA debe estar entre 0 y 100');
     const story = await both(b.story, lang);
     const quote = await both(b.quote, lang);
     await q(
@@ -92,7 +101,7 @@ r.put('/me/profile', requireAuth, h(async (req, res) => {
         u.id, str(b.name, 120), str(b.region, 80), str(b.municipality, 80), Math.round(num(b.altitude)), num(b.hectares),
         strArr(b.varieties), strArr(b.processes), num(b.sca), strArr(b.notes), b.since ? Math.round(num(b.since)) : null,
         story.es, story.en, quote.es, quote.en, str(b.certifications, 2000),
-        b.coverId ? num(b.coverId) : null, (Array.isArray(b.gallery) ? b.gallery : []).map((x) => num(x)).filter((x) => x > 0).slice(0, 12),
+        optId(b.coverId), gallery,
       ],
     );
   } else {
@@ -104,7 +113,7 @@ r.put('/me/profile', requireAuth, h(async (req, res) => {
         WHERE user_id=$1`,
       [
         u.id, str(b.company, 120), str(b.city, 80), str(b.country, 80), str(b.type, 80), str(b.volume, 80),
-        b.since ? Math.round(num(b.since)) : null, about.es, about.en, looking.es, looking.en, b.coverId ? num(b.coverId) : null,
+        b.since ? Math.round(num(b.since)) : null, about.es, about.en, looking.es, looking.en, optId(b.coverId),
       ],
     );
   }

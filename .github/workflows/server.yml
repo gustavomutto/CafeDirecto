@@ -1,5 +1,9 @@
 name: Servidor
 
+concurrency:
+  group: server-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     paths: ['server/**', '.github/workflows/server.yml']
@@ -20,11 +24,15 @@ jobs:
       run:
         working-directory: server
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
       - run: npm ci
+      - name: Revisión de estilo y errores (ESLint)
+        run: npx eslint .
+      - name: Dependencias sin vulnerabilidades conocidas
+        run: npm audit --omit=dev --audit-level=high
       - run: for f in $(find src -name '*.js'); do node --check $f; done
       - name: Pruebas de la API
         run: npm test

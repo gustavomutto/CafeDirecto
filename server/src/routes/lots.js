@@ -6,7 +6,8 @@ const { q, one, many } = require('../db');
 const { requireAuth } = require('../auth');
 const S = require('../serialize');
 const { notify } = require('../services/notifications');
-const { h, bad, notFound, forbidden, num, str, strArr } = require('../lib/http');
+const { h, bad, notFound, forbidden, num, str, strArr, inRange, optId } = require('../lib/http');
+const { assertOwnImages } = require('../services/images');
 
 const r = express.Router();
 const INTEREST_EVERY_HOURS = 24; // como máximo un aviso por comprador y lote cada 24 h
@@ -97,16 +98,18 @@ r.get('/lots/:id/interest', requireAuth, h(async (req, res) => {
   })));
 }));
 
-function lotFields(b) {
-  const sca = num(b.sca);
+async function lotFields(b, userId) {
   if (!str(b.variety)) throw bad('Elige la variedad');
   if (!['lavado', 'honey', 'natural'].includes(b.process)) throw bad('Proceso inválido');
-  if (sca < 80) throw bad('CaféDirecto recibe cafés de 80 puntos o más');
-  if (num(b.priceLb) <= 0) throw bad('El precio debe ser mayor que 0');
+  const sca = inRange(b.sca, 80, 100, 'CaféDirecto recibe cafés de 80 a 100 puntos');
+  const priceLb = inRange(b.priceLb, 0.01, 100, 'El precio debe estar entre US$ 0,01 y US$ 100 por libra');
+  const sacks = Math.round(inRange(b.sacks ?? 0, 0, 100000, 'La cantidad debe estar entre 0 y 100.000 sacos'));
+  const priceCarga = b.priceCarga ? Math.round(inRange(b.priceCarga, 1, 100000000, 'Precio por carga inválido')) : null;
+  const photoId = optId(b.photoId);
+  await assertOwnImages(userId, [photoId]);
   return [
-    str(b.name, 120) || `Lote ${str(b.variety, 60)}`, str(b.variety, 60), b.process, Math.max(0, Math.round(num(b.sacks))),
-    sca, num(b.priceLb), b.priceCarga ? Math.round(num(b.priceCarga)) : null, strArr(b.notes).slice(0, 6),
-    str(b.harvest, 80), b.photoId ? num(b.photoId) : null,
+    str(b.name, 120) || `Lote ${str(b.variety, 60)}`, str(b.variety, 60), b.process, sacks,
+    sca, priceLb, priceCarga, strArr(b.notes).slice(0, 6), str(b.harvest, 80), photoId,
   ];
 }
 
@@ -115,7 +118,7 @@ r.post('/lots', requireAuth, h(async (req, res) => {
   const row = await one(
     `INSERT INTO lots (farmer_id, name, variety, process, sacks, sca, price_lb, price_carga, notes, harvest, photo_id)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
-    [req.user.id, ...lotFields(req.body)],
+    [req.user.id, ...(await lotFields(req.body, req.user.id))],
   );
   res.status(201).json(S.lot(await one(`${S.LOT_SELECT} WHERE l.id = $1`, [row.id])));
 }));
@@ -128,7 +131,7 @@ r.put('/lots/:id', requireAuth, h(async (req, res) => {
   await q(
     `UPDATE lots SET name=$2, variety=$3, process=$4, sacks=$5, sca=$6, price_lb=$7, price_carga=$8, notes=$9, harvest=$10, photo_id=$11
       WHERE id=$1`,
-    [id, ...lotFields(req.body)],
+    [id, ...(await lotFields(req.body, req.user.id))],
   );
   res.json(S.lot(await one(`${S.LOT_SELECT} WHERE l.id = $1`, [id])));
 }));

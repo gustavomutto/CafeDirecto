@@ -2,7 +2,7 @@ const B=process.env.API_URL||'http://localhost:3999'; let ok=0,fail=0; const che
 async function api(p,{token,method='GET',body}={}){const h={};if(token)h.Authorization='Bearer '+token;if(body)h['Content-Type']='application/json';
  const r=await fetch(B+p,{method,headers:h,body:body&&JSON.stringify(body)});const t=await r.text();let j;try{j=JSON.parse(t)}catch{j=t};return{s:r.status,j}}
 const rnd=Math.random().toString(36).slice(2,7);
-const reg=async(role,name,extra={})=>{const r=await api('/auth/register',{method:'POST',body:{email:`${name}${rnd}@x.co`,password:'123456',role,name,...extra}});return {t:r.j.token,id:r.j.user.id}};
+const reg=async(role,name,extra={})=>{const r=await api('/auth/register',{method:'POST',body:{email:`${name}${rnd}@x.co`,password:'cafe1234',role,name,...extra}});return {t:r.j.token,id:r.j.user.id}};
 const F=await reg('farmer','luz',{farmName:'La Esperanza',region:'Huila'});
 const B1=await reg('buyer','lena',{company:'Nordlicht',country:'Alemania'});
 const B2=await reg('buyer','kenji',{company:'Kissa',country:'Japón',lang:'en'});

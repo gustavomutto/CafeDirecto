@@ -3,8 +3,8 @@ const B=process.env.API_URL||'http://localhost:3999'; let ok=0,fail=0; const che
 async function api(p,{token,method='GET',body}={}){const h={};if(token)h.Authorization='Bearer '+token;if(body)h['Content-Type']='application/json';
  const r=await fetch(B+p,{method,headers:h,body:body&&JSON.stringify(body)});const t=await r.text();let j;try{j=JSON.parse(t)}catch{j=t};return{s:r.status,j}}
 const rnd=Math.random().toString(36).slice(2,7); const fe=`f${rnd}@x.co`, be=`b${rnd}@x.de`;
-let r=await api('/auth/register',{method:'POST',body:{email:fe,password:'123456',role:'farmer',name:'F',farmName:'Finca',region:'Huila'}}); const F=r.j.token;
-r=await api('/auth/register',{method:'POST',body:{email:be,password:'123456',role:'buyer',name:'B',company:'Co'}}); const Bt=r.j.token, bid=r.j.user.id;
+let r=await api('/auth/register',{method:'POST',body:{email:fe,password:'cafe1234',role:'farmer',name:'F',farmName:'Finca',region:'Huila'}}); const F=r.j.token;
+r=await api('/auth/register',{method:'POST',body:{email:be,password:'cafe1234',role:'buyer',name:'B',company:'Co'}}); const Bt=r.j.token;
 // forgot/reset
 r=await api('/auth/forgot',{method:'POST',body:{email:fe}}); check(r.s===200,'forgot '+JSON.stringify(r.j));
 r=await api('/auth/forgot',{method:'POST',body:{email:'nadie@x.co'}}); check(r.s===200,'forgot unknown same reply');
@@ -36,13 +36,13 @@ r=await api(`/disputes/${did}/resolve`,{token:Bt,method:'POST',body:{}}); check(
 r=await api(`/disputes/${did}/resolve`,{token:F2,method:'POST',body:{}}); check(r.s===200&&r.j.disputes[0].status==='resolved','resolve');
 // delete account
 r=await api('/me',{token:Bt,method:'DELETE',body:{password:'mal'}}); check(r.s===403,'delete wrong pass');
-r=await api('/me',{token:Bt,method:'DELETE',body:{password:'123456'}}); check(r.s===200,'delete '+JSON.stringify(r.j));
+r=await api('/me',{token:Bt,method:'DELETE',body:{password:'cafe1234'}}); check(r.s===200,'delete '+JSON.stringify(r.j));
 r=await api('/me',{token:Bt}); check(r.s===401,'deleted token dead');
 r=await api(`/agreements/${aid}`,{token:F2}); check(r.s===200&&r.j.buyer.name==='Cuenta eliminada','agreement kept anonymized '+JSON.stringify(r.j.buyer));
-r=await api('/auth/login',{method:'POST',body:{email:be,password:'123456'}}); check(r.s===401,'deleted cannot login');
+r=await api('/auth/login',{method:'POST',body:{email:be,password:'cafe1234'}}); check(r.s===401,'deleted cannot login');
 // user without agreements gets fully deleted
-r=await api('/auth/register',{method:'POST',body:{email:`z${rnd}@x.de`,password:'123456',role:'buyer',name:'Z'}});
-r=await api('/me',{token:r.j.token,method:'DELETE',body:{password:'123456'}}); check(r.s===200,'delete plain');
+r=await api('/auth/register',{method:'POST',body:{email:`z${rnd}@x.de`,password:'cafe1234',role:'buyer',name:'Z'}});
+r=await api('/me',{token:r.j.token,method:'DELETE',body:{password:'cafe1234'}}); check(r.s===200,'delete plain');
 // rate limit login
 let last; for(let i=0;i<11;i++) last=await api('/auth/login',{method:'POST',body:{email:'rl@x.co',password:'x'}}); check(last.s===429,'ratelimit '+last.s);
 console.log('ok',ok,'fail',fail); process.exitCode = fail ? 1 : 0;

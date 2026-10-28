@@ -8,7 +8,9 @@ const S = require('../serialize');
 const C = require('../services/conversations');
 const { createAgreement } = require('../services/agreements');
 const { notify, usd } = require('../services/notifications');
-const { h, bad, notFound, num, str, otherLang, tx } = require('../lib/http');
+const { limit } = require('../ratelimit');
+const { assertOwnImages } = require('../services/images');
+const { h, bad, notFound, num, str, otherLang, inRange, optId, MIN, tx } = require('../lib/http');
 
 const r = express.Router();
 
@@ -26,8 +28,12 @@ r.get('/unread', requireAuth, h(async (req, res) => {
         AND (m.sender_id IS NULL OR m.sender_id <> $1)`,
     [req.user.id],
   );
-  const n = await one('SELECT COUNT(*)::int AS n FROM notifications WHERE user_id = $1 AND read_at IS NULL', [req.user.id]);
-  res.json({ unread: row.n, notifications: n.n });
+  // Avisos sin leer y el id del más reciente: la app solo pide la lista si llegó uno nuevo.
+  const n = await one(
+    'SELECT COUNT(*) FILTER (WHERE read_at IS NULL)::int AS n, COALESCE(MAX(id),0)::int AS latest FROM notifications WHERE user_id = $1',
+    [req.user.id],
+  );
+  res.json({ unread: row.n, notifications: n.n, latestNotificationId: n.latest });
 }));
 
 r.post('/conversations', requireAuth, h(async (req, res) => {
@@ -54,13 +60,15 @@ r.get('/conversations/:id/messages', requireAuth, h(async (req, res) => {
   res.json(rows.map((m) => S.message(m, c)));
 }));
 
-r.post('/conversations/:id/messages', requireAuth, h(async (req, res) => {
+// 40 mensajes por minuto por usuario (cada mensaje se traduce y eso tiene costo).
+r.post('/conversations/:id/messages', requireAuth, limit('message', 40, MIN, (req) => req.user.id), h(async (req, res) => {
   const c = await C.myConv(req, req.params.id);
   const b = req.body;
   const type = b.type === 'photo' ? 'photo' : 'text';
   const text = str(b.text, 4000);
   if (type === 'text' && !text) throw bad('Mensaje vacío');
   if (type === 'photo' && !b.photoId) throw bad('Falta la foto');
+  if (type === 'photo') await assertOwnImages(req.user.id, [optId(b.photoId)]);
   const lang = ['es', 'en'].includes(b.lang) ? b.lang : req.user.lang;
   const otherId = c.farmer_id === req.user.id ? c.buyer_id : c.farmer_id;
   const other = await one('SELECT lang FROM users WHERE id = $1', [otherId]);
@@ -98,9 +106,8 @@ r.post('/conversations/:id/quotes', requireAuth, h(async (req, res) => {
   const lot = await one('SELECT * FROM lots WHERE id = $1 AND farmer_id = $2', [num(b.lotId, -1), c.farmer_id]);
   if (!lot) throw bad('El lote no pertenece a esta finca');
   const sacks = Math.round(num(b.sacks));
-  const priceLb = num(b.priceLb);
+  const priceLb = inRange(b.priceLb, 0.01, 100, 'El precio debe estar entre US$ 0,01 y US$ 100 por libra');
   if (sacks < 1 || sacks > lot.sacks) throw bad(`Cantidad inválida (disponible: ${lot.sacks} sacos)`);
-  if (priceLb <= 0) throw bad('Precio inválido');
   const role = req.user.role;
   const m = await tx(pool, async (client) => {
     // una cotización nueva reemplaza a las que sigan abiertas
@@ -147,9 +154,9 @@ r.post('/messages/:id/quote', requireAuth, h(async (req, res) => {
 
     if (action === 'counter') {
       if (qt.status !== 'open' || qt.lastBy === role) throw bad('No puedes contraofertar esta cotización');
-      const priceLb = num(req.body.priceLb);
+      const priceLb = inRange(req.body.priceLb, 0.01, 100, 'El precio debe estar entre US$ 0,01 y US$ 100 por libra');
       const sacks = Math.round(num(req.body.sacks, qt.sacks));
-      if (priceLb <= 0 || sacks < 1) throw bad('Precio o cantidad inválidos');
+      if (sacks < 1 || sacks > 100000) throw bad('Cantidad inválida');
       await client.query(`UPDATE messages SET quote = jsonb_set(quote, '{status}', '"superseded"') WHERE id = $1`, [qm.id]);
       const quote = {
         ...qt, priceLb, sacks,

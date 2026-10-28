@@ -20,6 +20,18 @@ const num = (v, def = 0) => (v === undefined || v === null || v === '' || Number
 const strArr = (v) => (Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean).slice(0, 20) : []);
 const str = (v, max = 500) => String(v ?? '').trim().slice(0, max);
 
+/** Número dentro de [min, max]; si no, lanza 400 con el mensaje dado. */
+function inRange(v, min, max, msg) {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < min || n > max) throw bad(msg);
+  return n;
+}
+
+/** Id positivo o null (para campos opcionales como photoId). */
+const optId = (v) => (v === undefined || v === null || v === '' ? null : Math.round(num(v, 0)) || null);
+
+const MIN_PASSWORD = 8;
+
 const MIN = 60 * 1000;
 const HOUR = 60 * MIN;
 
@@ -39,4 +51,4 @@ async function tx(pool, fn) {
   }
 }
 
-module.exports = { h, HttpError, bad, notFound, forbidden, conflict, otherLang, num, strArr, str, MIN, HOUR, tx };
+module.exports = { h, HttpError, bad, notFound, forbidden, conflict, otherLang, num, strArr, str, inRange, optId, MIN, HOUR, MIN_PASSWORD, tx };
