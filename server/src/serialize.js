@@ -99,7 +99,14 @@ const LOT_SELECT = `
          (SELECT COALESCE(AVG(r.stars),0)::float FROM ratings r JOIN agreements a ON a.id=r.agreement_id
            WHERE r.by_user_id <> l.farmer_id AND a.farmer_id = l.farmer_id) AS rating_avg,
          (SELECT COUNT(*)::int FROM ratings r JOIN agreements a ON a.id=r.agreement_id
-           WHERE r.by_user_id <> l.farmer_id AND a.farmer_id = l.farmer_id) AS rating_count
+           WHERE r.by_user_id <> l.farmer_id AND a.farmer_id = l.farmer_id) AS rating_count,
+         (SELECT json_build_object(
+                   'id', au.id, 'endsAt', au.ends_at, 'basePriceLb', au.base_price_lb, 'minIncrementLb', au.min_increment_lb,
+                   'sacks', au.sacks, 'status', au.status,
+                   'highest', (SELECT MAX(bd.price_lb) FROM bids bd WHERE bd.auction_id = au.id),
+                   'bids', (SELECT COUNT(*) FROM bids bd WHERE bd.auction_id = au.id),
+                   'bidders', (SELECT COUNT(DISTINCT bd.buyer_id) FROM bids bd WHERE bd.auction_id = au.id))
+            FROM auctions au WHERE au.lot_id = l.id AND au.status = 'open' ORDER BY au.id DESC LIMIT 1) AS auction_json
     FROM lots l
     JOIN users u ON u.id = l.farmer_id
     LEFT JOIN farms f ON f.user_id = l.farmer_id`;
@@ -119,6 +126,7 @@ function lot(r) {
     harvest: r.harvest || '',
     photo: img(r.photo_id),
     active: r.active,
+    auction: auctionSummary(r.auction_json),
     createdAt: ms(r.created_at),
     isNew: Date.now() - ms(r.created_at) < 7 * 86400000,
     farm: {
@@ -131,6 +139,84 @@ function lot(r) {
       producerPhoto: img(r.producer_photo),
       rating: { avg: r.rating_avg || 0, count: r.rating_count || 0 },
     },
+  };
+}
+
+/** Fase de una subasta: live (recibe ofertas), ended (terminó, falta elegir), awarded, cancelled, expired. */
+function auctionPhase(status, endsAt) {
+  if (status !== 'open') return status;
+  return ms(endsAt) > Date.now() ? 'live' : 'ended';
+}
+
+function auctionSummary(j) {
+  if (!j) return null;
+  return {
+    id: j.id,
+    endsAt: ms(j.endsAt),
+    basePriceLb: Number(j.basePriceLb),
+    minIncrementLb: Number(j.minIncrementLb),
+    sacks: j.sacks,
+    phase: auctionPhase(j.status, j.endsAt),
+    highest: j.highest == null ? null : Number(j.highest),
+    bids: Number(j.bids) || 0,
+    bidders: Number(j.bidders) || 0,
+  };
+}
+
+/**
+ * Subasta completa. El caficultor ve quién ofertó; cada comprador ve sus propias ofertas
+ * y a los demás como "Comprador 1, 2…" (para que la puja sea justa).
+ */
+function auction(a, lotRow, bidRows, viewer) {
+  const isOwner = viewer.id === a.farmer_id;
+  const alias = new Map();
+  for (const b of [...bidRows].sort((x, y) => x.id - y.id)) if (!alias.has(b.buyer_id)) alias.set(b.buyer_id, alias.size + 1);
+  const bids = [...bidRows].sort((x, y) => Number(y.price_lb) - Number(x.price_lb) || x.id - y.id).map((b) => ({
+    id: b.id,
+    priceLb: Number(b.price_lb),
+    status: b.status,
+    at: ms(b.created_at),
+    mine: b.buyer_id === viewer.id,
+    alias: alias.get(b.buyer_id),
+    bidder: isOwner || b.buyer_id === viewer.id
+      ? { id: b.buyer_id, name: b.buyer_name, company: b.company || '', country: b.country || '', photo: img(b.buyer_photo) }
+      : null,
+  }));
+  const highest = bids.length ? bids[0].priceLb : null;
+  const minNext = highest == null ? Number(a.base_price_lb) : Number((highest + Number(a.min_increment_lb)).toFixed(2));
+  const myBest = bids.find((b) => b.mine) || null;
+  return {
+    id: a.id,
+    lotId: a.lot_id,
+    farmerId: a.farmer_id,
+    basePriceLb: Number(a.base_price_lb),
+    minIncrementLb: Number(a.min_increment_lb),
+    sacks: a.sacks,
+    incoterm: a.incoterm,
+    endsAt: ms(a.ends_at),
+    createdAt: ms(a.created_at),
+    phase: auctionPhase(a.status, a.ends_at),
+    highest,
+    minNext,
+    bidders: alias.size,
+    bids,
+    myBest: myBest ? myBest.priceLb : null,
+    leading: !!myBest && bids[0].mine,
+    winningBidId: a.winning_bid_id,
+    agreementId: a.agreement_id,
+    lot: lotRow ? lot(lotRow) : null,
+  };
+}
+
+function notification(n) {
+  return {
+    id: n.id,
+    type: n.type,
+    title: { es: n.title_es, en: n.title_en },
+    body: { es: n.body_es, en: n.body_en },
+    data: n.data || {},
+    read: !!n.read_at,
+    createdAt: ms(n.created_at),
   };
 }
 
@@ -232,4 +318,7 @@ function dispute(d, a) {
   };
 }
 
-module.exports = { img, ms, publicUser, meUser, farmProfile, buyerProfile, LOT_SELECT, lot, message, agreement, ratingOf };
+module.exports = {
+  img, ms, publicUser, meUser, farmProfile, buyerProfile, LOT_SELECT, lot, message, agreement, ratingOf,
+  auction, auctionPhase, notification,
+};

@@ -1,0 +1,57 @@
+name: App Flutter
+
+on:
+  push:
+    paths: ['mobile_app/**', '.github/workflows/flutter.yml']
+  pull_request:
+    paths: ['mobile_app/**']
+  workflow_dispatch:
+
+jobs:
+  analizar-y-compilar:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: echo "::notice::$(flutter --version | head -1)"
+      - run: flutter pub get
+      # Los errores se publican como anotaciones para verlos en el resumen de la ejecución.
+      - name: Análisis del código
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos > analyze.txt 2>&1
+          code=$?
+          cat analyze.txt
+          grep -E "^ *(error|warning) " analyze.txt | head -45 | while IFS= read -r l; do echo "::error::$l"; done
+          exit $code
+      - name: Pruebas
+        run: |
+          set +e
+          flutter test > test.txt 2>&1
+          code=$?
+          cat test.txt
+          if [ $code -ne 0 ]; then grep -E "Error|Expected|Actual|FAILED|\.dart:[0-9]+" test.txt | head -40 | while IFS= read -r l; do echo "::error::$l"; done; fi
+          exit $code
+      - name: Construir APK
+        run: |
+          set +e
+          flutter build apk --release > build.txt 2>&1
+          code=$?
+          cat build.txt
+          if [ $code -ne 0 ]; then grep -E "error|Error|FAILURE|What went wrong" -A2 build.txt | head -45 | while IFS= read -r l; do echo "::error::$l"; done; fi
+          exit $code
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cafedirecto-apk
+          path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14

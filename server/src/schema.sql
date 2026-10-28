@@ -182,3 +182,69 @@ CREATE TABLE IF NOT EXISTS password_resets (
   attempts    INTEGER NOT NULL DEFAULT 0,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ── v2: subastas, notificaciones, interés en lotes y mercado ──────
+-- Subasta de un lote con fecha de cierre. Solo una abierta por lote.
+CREATE TABLE IF NOT EXISTS auctions (
+  id                SERIAL PRIMARY KEY,
+  lot_id            INTEGER NOT NULL REFERENCES lots(id) ON DELETE CASCADE,
+  farmer_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  base_price_lb     NUMERIC NOT NULL CHECK (base_price_lb > 0),
+  min_increment_lb  NUMERIC NOT NULL DEFAULT 0.05 CHECK (min_increment_lb > 0),
+  sacks             INTEGER NOT NULL CHECK (sacks > 0),
+  incoterm          TEXT NOT NULL DEFAULT 'FOB Buenaventura',
+  ends_at           TIMESTAMPTZ NOT NULL,
+  status            TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','awarded','cancelled','expired')),
+  winning_bid_id    INTEGER,
+  agreement_id      INTEGER REFERENCES agreements(id) ON DELETE SET NULL,
+  ended_notified    BOOLEAN NOT NULL DEFAULT false,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  closed_at         TIMESTAMPTZ
+);
+CREATE UNIQUE INDEX IF NOT EXISTS auctions_open_lot_idx ON auctions (lot_id) WHERE status = 'open';
+
+-- Ofertas (pujas). Cada oferta queda registrada; al cerrar se marcan como ganadora o perdedora.
+CREATE TABLE IF NOT EXISTS bids (
+  id          SERIAL PRIMARY KEY,
+  auction_id  INTEGER NOT NULL REFERENCES auctions(id) ON DELETE CASCADE,
+  buyer_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  price_lb    NUMERIC NOT NULL CHECK (price_lb > 0),
+  status      TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','won','lost')),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS bids_auction_idx ON bids (auction_id, price_lb DESC);
+
+-- Notificaciones de la campanita.
+CREATE TABLE IF NOT EXISTS notifications (
+  id          SERIAL PRIMARY KEY,
+  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type        TEXT NOT NULL,
+  title_es    TEXT NOT NULL,
+  body_es     TEXT NOT NULL DEFAULT '',
+  title_en    TEXT NOT NULL,
+  body_en     TEXT NOT NULL DEFAULT '',
+  data        JSONB NOT NULL DEFAULT '{}',
+  read_at     TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, id DESC);
+
+-- Compradores que vieron un lote (para avisar al caficultor que hay interés).
+CREATE TABLE IF NOT EXISTS lot_views (
+  lot_id       INTEGER NOT NULL REFERENCES lots(id) ON DELETE CASCADE,
+  buyer_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  views        INTEGER NOT NULL DEFAULT 1,
+  first_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  notified_at  TIMESTAMPTZ,
+  PRIMARY KEY (lot_id, buyer_id)
+);
+
+-- Registro diario de precios (para el histórico del precio interno).
+CREATE TABLE IF NOT EXISTS market_snapshots (
+  day            DATE PRIMARY KEY,
+  fnc_cop_carga  INTEGER,
+  ny_usd_cents   NUMERIC,
+  trm            NUMERIC,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
