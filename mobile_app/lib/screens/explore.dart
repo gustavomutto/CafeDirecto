@@ -10,6 +10,7 @@ import '../utils/format.dart';
 import '../widgets/common.dart';
 import '../widgets/loader.dart';
 import '../widgets/lot_card.dart';
+import 'market.dart';
 
 class _Filters {
   Set<String> regions;
@@ -154,6 +155,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                           suffixIcon: _search.text.isEmpty ? null : IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => _search.clear()),
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      const MarketShortcut(),
                     ]),
                   ),
                 ),

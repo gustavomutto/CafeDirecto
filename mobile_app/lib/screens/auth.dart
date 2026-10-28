@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/catalog.dart';
+import 'market.dart';
 import '../state/app_scope.dart';
 import '../theme/palette.dart';
 import '../widgets/common.dart';
@@ -58,6 +59,13 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                 ),
               ]),
+            ),
+          ),
+          Positioned(
+            top: 12,
+            right: 12,
+            child: SafeArea(
+              child: const MarketRateBadge(),
             ),
           ),
         ]),
@@ -381,7 +389,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       const SizedBox(height: 18),
       Text(t('Idioma de la app', 'App language'), style: p.text(size: p.fs - 2, weight: FontWeight.w700)),
       const SizedBox(height: 6),
-      Segmented(options: const {'es': 'Español', 'en': 'English'}, value: lang, onChanged: (v) => setState(() => lang = v)),
+      Segmented(options: const {'es': '🇪🇸 Español', 'en': '🇺🇸 English'}, value: lang, onChanged: (v) => setState(() => lang = v)),
       const SizedBox(height: 6),
       Text(t('Los mensajes que recibas se traducen a este idioma.', 'Messages you receive are translated into this language.'),
           style: p.muted(size: 13)),
