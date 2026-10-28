@@ -138,9 +138,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
         padding: const EdgeInsets.all(12),
         color: unread > 0 ? p.surface : p.bg,
         onTap: () async {
+          final counters = context.read<NotificationsProvider>();
           await context.go('/chat/${c.id}');
           _load();
-          app.refreshUnread();
+          counters.refresh();
         },
         child: Row(children: [
           Avatar(src: c.other.photo, name: c.other.name, size: app.isFarmer ? 56 : 50),
