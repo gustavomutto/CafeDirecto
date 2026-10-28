@@ -43,7 +43,7 @@ docker run -d --name cafedirecto-db -e POSTGRES_USER=cafe -e POSTGRES_PASSWORD=c
 cd server
 npm install
 start-local.cmd                  # Windows (o: DATABASE_URL=postgres://cafe:cafe_local@localhost:5432/cafedirecto npm start)
-npm test                         # 135 pruebas de la API
+npm test                         # 148 pruebas de la API
 ```
 
 Para apuntar la app al servidor local: `flutter run --dart-define=API_URL=http://10.0.2.2:3000` (emulador)
@@ -59,6 +59,7 @@ o la IP de tu computador en la red wifi (celular).
 | Abrir subastas y elegir la oferta ganadora | Cotizar, contraofertar y confirmar acuerdos |
 | Marcar el despacho; calificar | Confirmar la entrega; reporte de calidad; calificar |
 | Precio interno FNC, bolsa y calculadora "¿cuánto vale mi café?" | Precio de referencia en US$/lb y dólar por país |
+| App en español o inglés con un toque | Modo claro, neutro, oscuro o automático; color y tamaño de letra |
 
 ## Documentación
 
