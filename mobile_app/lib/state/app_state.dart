@@ -1,7 +1,7 @@
 // Estado global: sesión del usuario, su perfil, pestaña activa, mensajes sin leer y avisos.
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api.dart';
@@ -30,6 +30,11 @@ class AppState extends ChangeNotifier {
   int _toastSeq = 0;
   Timer? _poll;
 
+  /// true mientras la app está en pantalla. En segundo plano se pausan las consultas
+  /// periódicas al servidor (ahorra datos y batería).
+  bool foreground = true;
+  AppLifecycleListener? _life;
+
   /// Sube cuando cambian datos (lotes, perfil, acuerdos) para que las pantallas recarguen.
   int dataVersion = 0;
 
@@ -46,6 +51,7 @@ class AppState extends ChangeNotifier {
       prefs = await SharedPreferences.getInstance();
     } catch (_) {}
     final s = AppState._(prefs);
+    s._life = AppLifecycleListener(onStateChange: s._onLifecycle);
     final token = prefs?.getString(_tokenKey);
     if (token != null) {
       s.api.token = token;
@@ -112,6 +118,25 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Elimina la cuenta en el servidor (pide la contraseña). Después hay que llamar a [logout].
+  Future<void> deleteAccountOnServer(String password) async {
+    await api.delete('/me', {'password': password});
+  }
+
+  /// Pide un código de 6 dígitos por correo para cambiar la contraseña.
+  Future<void> forgotPassword(String email) async {
+    await api.post('/auth/forgot', {'email': email});
+  }
+
+  /// Cambia la contraseña con el código recibido y entra a la app.
+  Future<void> resetPassword(String email, String code, String password) async {
+    final j = await api.post('/auth/reset', {'email': email, 'code': code, 'password': password}) as Map;
+    await _saveToken(j['token'] as String);
+    await refreshMe();
+    tab = 0;
+    _startPolling();
+  }
+
   Future<void> updateAccount(Map<String, dynamic> data) async {
     _applyMe(await api.put('/me', data) as Map);
     dataVersion++;
@@ -130,7 +155,19 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Mensajes sin leer (se consulta cada 10 s) ───────────────────
+  void _onLifecycle(AppLifecycleState s) {
+    final visible = s == AppLifecycleState.resumed || s == AppLifecycleState.inactive;
+    if (visible == foreground) return;
+    foreground = visible;
+    if (!visible) {
+      _poll?.cancel();
+    } else if (loggedIn) {
+      _startPolling(); // al volver, se pone al día de inmediato
+    }
+    notifyListeners();
+  }
+
+  // ── Mensajes sin leer (se consulta cada 10 s, solo con la app en pantalla) ──
   void _startPolling() {
     _poll?.cancel();
     refreshUnread();
@@ -174,6 +211,7 @@ class AppState extends ChangeNotifier {
   @override
   void dispose() {
     _poll?.cancel();
+    _life?.dispose();
     super.dispose();
   }
 }

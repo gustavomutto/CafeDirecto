@@ -78,6 +78,6 @@ const tagsFor = <String, List<String>>{
   'buyer': ['quality', 'communication', 'packaging', 'punctual'], // el comprador califica al caficultor
 };
 
-/// Modelo de comisiones de la demo (supuesto, ajustable).
+/// Modelo de comisiones (ajustable).
 const feeFarmer = 0.02;
 const feeBuyer = 0.04;

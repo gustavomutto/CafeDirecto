@@ -1,4 +1,4 @@
--- Esquema de CaféDirecto. Se ejecuta al arrancar el servidor (es idempotente).
+
 
 CREATE TABLE IF NOT EXISTS images (
   id          SERIAL PRIMARY KEY,
@@ -135,4 +135,50 @@ CREATE TABLE IF NOT EXISTS ratings (
   comment_en    TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (agreement_id, by_user_id)
+);
+
+-- Reporte de calidad que emite el comprador después de la entrega — RF-22.
+CREATE TABLE IF NOT EXISTS quality_reports (
+  agreement_id    INTEGER PRIMARY KEY REFERENCES agreements(id) ON DELETE CASCADE,
+  by_user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sca             NUMERIC NOT NULL CHECK (sca BETWEEN 0 AND 100),
+  moisture        NUMERIC CHECK (moisture BETWEEN 0 AND 100),
+  defects         INTEGER CHECK (defects >= 0),
+  matches_sample  BOOLEAN NOT NULL DEFAULT true,
+  notes           TEXT[] NOT NULL DEFAULT '{}',
+  comment_es      TEXT,
+  comment_en      TEXT,
+  photo_id        INTEGER REFERENCES images(id) ON DELETE SET NULL,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Disputas sobre un acuerdo — RF-19.
+-- events: [{ by, kind: 'open'|'comment'|'resolve', es, en, photo, at }]
+CREATE TABLE IF NOT EXISTS disputes (
+  id            SERIAL PRIMARY KEY,
+  agreement_id  INTEGER NOT NULL REFERENCES agreements(id) ON DELETE CASCADE,
+  opened_by     INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  reason        TEXT NOT NULL CHECK (reason IN ('quality','quantity','delay','payment','other')),
+  status        TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','resolved')),
+  events        JSONB NOT NULL DEFAULT '[]',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  resolved_at   TIMESTAMPTZ
+);
+-- Solo una disputa abierta por acuerdo
+CREATE UNIQUE INDEX IF NOT EXISTS disputes_open_idx ON disputes (agreement_id) WHERE status = 'open';
+
+-- ── v1.3: seguridad de cuentas ────────────────────────────────────
+-- Cuenta eliminada: se borran sus datos personales y queda solo lo necesario
+-- para los acuerdos que la otra parte ya tiene registrados.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+-- Sube al cambiar la contraseña; invalida las sesiones abiertas.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0;
+
+-- Código de recuperación de contraseña (uno vigente por usuario, guardado con hash).
+CREATE TABLE IF NOT EXISTS password_resets (
+  user_id     INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  code_hash   TEXT NOT NULL,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  attempts    INTEGER NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );

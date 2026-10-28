@@ -92,9 +92,12 @@ class RootGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = context.app;
+    // Sin sesión se cambia de inmediato: si la pantalla principal se quedara animando su salida,
+    // se volvería a dibujar sin usuario (app.user == null) y fallaría.
+    if (!app.loggedIn) return const WelcomeScreen(key: ValueKey('welcome'));
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
-      child: app.loggedIn ? MainShell(key: ValueKey('shell-${app.user!.id}')) : const WelcomeScreen(key: ValueKey('welcome')),
+      child: MainShell(key: ValueKey('shell-${app.user!.id}')),
     );
   }
 }

@@ -72,7 +72,7 @@ class OrderDetailScreen extends StatelessWidget {
                         StatusTimeline(status: a.status, history: a.history, vertical: true),
                         if (next != null)
                           Btn('${app.tr('Marcar como', 'Mark as')} “${next.of(app.lang)}”',
-                              icon: next.icon, kind: BtnKind.demo, block: true, onPressed: advance),
+                              icon: next.icon, kind: BtnKind.outline, block: true, onPressed: advance),
                         FinePrint(app.tr('Cualquiera de las dos partes puede actualizar el estado. La logística y el pago se gestionan fuera de CaféDirecto.',
                             'Either party can update the status. Logistics and payment are handled outside CaféDirecto.')),
                       ]),

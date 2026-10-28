@@ -5,7 +5,7 @@ import '../theme/palette.dart';
 import 'app_state.dart';
 
 class AppScope extends InheritedNotifier<AppState> {
-  const AppScope({super.key, required AppState state, required Widget child}) : super(notifier: state, child: child);
+  const AppScope({super.key, required AppState state, required super.child}) : super(notifier: state);
 
   static AppState of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();
@@ -40,7 +40,7 @@ class PaletteOverride extends InheritedWidget {
   bool updateShouldNotify(PaletteOverride oldWidget) => oldWidget.palette != palette;
 }
 
-/// Llave global del navegador (la usa el panel de demo, que vive fuera de las rutas).
+/// Llave global del navegador (para navegar desde fuera de un widget, por ejemplo goHome()).
 final navKey = GlobalKey<NavigatorState>();
 
 /// Lleva la cuenta de las pantallas abiertas para saber en cuál estamos.

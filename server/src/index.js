@@ -3,13 +3,22 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const { pool, q, one, many, migrate } = require('./db');
 const { sign, requireAuth } = require('./auth');
 const { translate, both, providerName } = require('./translate');
+const { limit, hit } = require('./ratelimit');
+const { sendMail } = require('./mail');
 const S = require('./serialize');
 
+const MIN = 60 * 1000;
+const HOUR = 60 * MIN;
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
 const app = express();
+// Railway pone un proxy delante: así req.ip es la IP real del usuario (para el límite de intentos).
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
@@ -55,13 +64,13 @@ app.get('/images/:id', h(async (req, res) => {
 }));
 
 // ── Autenticación ─────────────────────────────────────────────────
-app.post('/auth/register', h(async (req, res) => {
+app.post('/auth/register', limit('register', 10, HOUR), h(async (req, res) => {
   const email = str(req.body.email, 200).toLowerCase();
   const password = String(req.body.password || '');
   const role = req.body.role;
   const name = str(req.body.name, 120);
   const lang = req.body.lang === 'en' ? 'en' : req.body.lang === 'es' ? 'es' : role === 'buyer' ? 'en' : 'es';
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw bad('Correo inválido');
+  if (!EMAIL_RE.test(email)) throw bad('Correo inválido');
   if (password.length < 6) throw bad('La contraseña debe tener al menos 6 caracteres');
   if (!['farmer', 'buyer'].includes(role)) throw bad('Rol inválido');
   if (!name) throw bad('Escribe tu nombre');
@@ -94,13 +103,69 @@ app.post('/auth/register', h(async (req, res) => {
   }
 }));
 
-app.post('/auth/login', h(async (req, res) => {
+// Login: 10 intentos por correo y 50 por IP cada 15 minutos (frena a quien intenta adivinar contraseñas).
+const loginEmail = (req) => `${req.ip}:${str(req.body.email, 200).toLowerCase()}`;
+app.post('/auth/login', limit('login-ip', 50, 15 * MIN), limit('login', 10, 15 * MIN, loginEmail), h(async (req, res) => {
   const email = str(req.body.email, 200).toLowerCase();
-  const u = await one('SELECT * FROM users WHERE email = $1', [email]);
+  const u = await one('SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL', [email]);
   if (!u || !(await bcrypt.compare(String(req.body.password || ''), u.password_hash))) {
     throw new HttpError(401, 'Correo o contraseña incorrectos');
   }
   res.json({ token: sign(u), user: S.meUser(u) });
+}));
+
+// ── Recuperar contraseña: se envía un código de 6 dígitos por correo (vence en 15 min) ──
+app.post('/auth/forgot', limit('forgot-ip', 10, HOUR), h(async (req, res) => {
+  const email = str(req.body.email, 200).toLowerCase();
+  if (!EMAIL_RE.test(email)) throw bad('Correo inválido');
+  // La respuesta es la misma exista o no la cuenta, para no revelar qué correos están registrados.
+  const generic = { ok: true };
+  if (hit(`forgot-email:${email}`, 3, HOUR)) return res.json(generic);
+  const u = await one('SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL', [email]);
+  if (!u) return res.json(generic);
+
+  const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+  await q(
+    `INSERT INTO password_resets (user_id, code_hash, expires_at) VALUES ($1, $2, now() + interval '15 minutes')
+     ON CONFLICT (user_id) DO UPDATE SET code_hash = EXCLUDED.code_hash, expires_at = EXCLUDED.expires_at, attempts = 0, created_at = now()`,
+    [u.id, await bcrypt.hash(code, 10)],
+  );
+  const es = u.lang === 'es';
+  try {
+    await sendMail({
+      to: u.email,
+      subject: es ? `Tu código de CaféDirecto: ${code}` : `Your CaféDirecto code: ${code}`,
+      text: es
+        ? `Hola, ${u.name}:\n\nTu código para crear una contraseña nueva es: ${code}\n\nVence en 15 minutos. Si no lo pediste, ignora este correo; tu contraseña no cambia.\n\nCaféDirecto`
+        : `Hi ${u.name},\n\nYour code to set a new password is: ${code}\n\nIt expires in 15 minutes. If you didn't ask for it, ignore this email; your password stays the same.\n\nCaféDirecto`,
+    });
+  } catch (e) {
+    console.error('No se pudo enviar el correo de recuperación:', e.message);
+    throw new HttpError(503, 'No pudimos enviar el correo. Inténtalo más tarde.');
+  }
+  res.json(generic);
+}));
+
+app.post('/auth/reset', limit('reset-ip', 20, 15 * MIN), h(async (req, res) => {
+  const email = str(req.body.email, 200).toLowerCase();
+  const code = str(req.body.code, 12).replace(/\s/g, '');
+  const password = String(req.body.password || '');
+  if (password.length < 6) throw bad('La contraseña debe tener al menos 6 caracteres');
+  const invalid = bad('El código no es válido o ya venció. Pide uno nuevo.');
+  const u = await one('SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL', [email]);
+  const r = u && (await one('SELECT * FROM password_resets WHERE user_id = $1', [u.id]));
+  if (!r || new Date(r.expires_at) < new Date() || r.attempts >= 5) throw invalid;
+  if (!(await bcrypt.compare(code, r.code_hash))) {
+    await q('UPDATE password_resets SET attempts = attempts + 1 WHERE user_id = $1', [u.id]);
+    throw invalid;
+  }
+  // Cambia la contraseña y cierra las sesiones abiertas en otros teléfonos.
+  const nu = await one(
+    'UPDATE users SET password_hash = $2, token_version = token_version + 1 WHERE id = $1 RETURNING *',
+    [u.id, await bcrypt.hash(password, 10)],
+  );
+  await q('DELETE FROM password_resets WHERE user_id = $1', [u.id]);
+  res.json({ token: sign(nu), user: S.meUser(nu) });
 }));
 
 // ── Mi cuenta y perfil ────────────────────────────────────────────
@@ -129,6 +194,45 @@ app.put('/me', requireAuth, h(async (req, res) => {
     ],
   );
   res.json({ user: S.meUser(u), profile: await fullProfile(u) });
+}));
+
+// Eliminar la cuenta (lo exige Google Play). Pide la contraseña para confirmar.
+// Se borran perfil, lotes, conversaciones, fotos y códigos. Si la persona tiene acuerdos registrados,
+// esos acuerdos se conservan para la otra parte y la cuenta queda anónima ("Cuenta eliminada").
+app.delete('/me', limit('delete-me', 5, 15 * MIN), requireAuth, h(async (req, res) => {
+  if (!(await bcrypt.compare(String(req.body?.password || ''), req.user.password_hash))) {
+    throw forbidden('La contraseña no es correcta');
+  }
+  const uid = req.user.id;
+  const keepRecord = !!(await one('SELECT 1 FROM agreements WHERE farmer_id = $1 OR buyer_id = $1 LIMIT 1', [uid]));
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM conversations WHERE farmer_id = $1 OR buyer_id = $1', [uid]);
+    await client.query('DELETE FROM lots WHERE farmer_id = $1', [uid]);
+    await client.query('DELETE FROM password_resets WHERE user_id = $1', [uid]);
+    if (keepRecord) {
+      await client.query('DELETE FROM farms WHERE user_id = $1', [uid]);
+      await client.query('DELETE FROM buyers WHERE user_id = $1', [uid]);
+      await client.query(
+        `UPDATE users SET email = 'deleted-' || id || '@cuenta-eliminada.invalid', password_hash = '!',
+                name = 'Cuenta eliminada', phone = NULL, photo_id = NULL,
+                deleted_at = now(), token_version = token_version + 1
+          WHERE id = $1`,
+        [uid],
+      );
+    } else {
+      await client.query('DELETE FROM users WHERE id = $1', [uid]);
+    }
+    await client.query('DELETE FROM images WHERE owner_id = $1', [uid]);
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+  res.json({ ok: true });
 }));
 
 app.put('/me/profile', requireAuth, h(async (req, res) => {
@@ -168,7 +272,7 @@ app.put('/me/profile', requireAuth, h(async (req, res) => {
 
 // Perfil público de cualquier usuario (finca o comprador)
 app.get('/users/:id', requireAuth, h(async (req, res) => {
-  const u = await one('SELECT * FROM users WHERE id = $1', [num(req.params.id, -1)]);
+  const u = await one('SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL', [num(req.params.id, -1)]);
   if (!u) throw notFound('Usuario no encontrado');
   const out = { user: S.publicUser(u), profile: await fullProfile(u) };
   if (u.role === 'farmer') {
@@ -313,7 +417,7 @@ app.get('/unread', requireAuth, h(async (req, res) => {
 }));
 
 app.post('/conversations', requireAuth, h(async (req, res) => {
-  const other = await one('SELECT * FROM users WHERE id = $1', [num(req.body.userId, -1)]);
+  const other = await one('SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL', [num(req.body.userId, -1)]);
   if (!other) throw notFound('Usuario no encontrado');
   if (other.role === req.user.role) throw bad('Solo se puede chatear entre caficultor y comprador');
   const farmerId = req.user.role === 'farmer' ? req.user.id : other.id;
@@ -569,8 +673,104 @@ app.post('/agreements/:id/rate', requireAuth, h(async (req, res) => {
   res.status(201).json(await S.agreement(a));
 }));
 
+/** Deja un aviso del sistema en el chat del acuerdo (si tiene conversación). */
+async function notifyChat(a, es, en) {
+  if (!a.conversation_id) return;
+  const c = await one('SELECT * FROM conversations WHERE id = $1', [a.conversation_id]);
+  if (c) await insertMessage(pool, c, { type: 'system', sys_es: es, sys_en: en });
+}
+
+// ── Reporte de calidad (RF-22) ────────────────────────────────────
+app.post('/agreements/:id/quality', requireAuth, h(async (req, res) => {
+  const a = await myAgreement(req, req.params.id);
+  if (a.buyer_id !== req.user.id) throw forbidden('Solo el comprador emite el reporte de calidad');
+  if (a.status < 3) throw bad('El reporte de calidad se emite después de la entrega');
+  if (await one('SELECT 1 FROM quality_reports WHERE agreement_id = $1', [a.id])) {
+    throw new HttpError(409, 'Ya enviaste el reporte de calidad de este acuerdo');
+  }
+  const b = req.body;
+  const sca = num(b.sca, -1);
+  if (sca < 0 || sca > 100) throw bad('El puntaje SCA debe estar entre 0 y 100');
+  const moisture = b.moisture === undefined || b.moisture === null || b.moisture === '' ? null : num(b.moisture, -1);
+  if (moisture !== null && (moisture < 0 || moisture > 100)) throw bad('La humedad debe estar entre 0 y 100 %');
+  const defects = b.defects === undefined || b.defects === null || b.defects === '' ? null : Math.round(num(b.defects, -1));
+  if (defects !== null && defects < 0) throw bad('Los defectos no pueden ser negativos');
+  const comment = await both(b.comment, req.user.lang);
+  await q(
+    `INSERT INTO quality_reports (agreement_id, by_user_id, sca, moisture, defects, matches_sample, notes, comment_es, comment_en, photo_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    [a.id, req.user.id, sca, moisture, defects, b.matchesSample !== false, strArr(b.notes).slice(0, 8),
+      comment.es || null, comment.en || null, b.photoId ? num(b.photoId) : null],
+  );
+  await notifyChat(a,
+    `📋 El comprador envió el reporte de calidad: ${sca} puntos SCA`,
+    `📋 The buyer submitted the quality report: ${sca} SCA points`);
+  res.status(201).json(await S.agreement(a));
+}));
+
+// ── Disputas (RF-19) ──────────────────────────────────────────────
+const DISPUTE_REASONS = {
+  quality: ['calidad', 'quality'],
+  quantity: ['cantidad', 'quantity'],
+  delay: ['retraso', 'delay'],
+  payment: ['pago', 'payment'],
+  other: ['otro motivo', 'other'],
+};
+
+async function myDispute(req, id) {
+  const d = await one('SELECT * FROM disputes WHERE id = $1', [num(id, -1)]);
+  if (!d) throw notFound('Disputa no encontrada');
+  return { d, a: await myAgreement(req, d.agreement_id) };
+}
+
+async function disputeEvent(req, kind) {
+  const text = await both(str(req.body.text, 2000), req.user.lang);
+  return { by: req.user.id, kind, es: text.es, en: text.en, photo: req.body.photoId ? num(req.body.photoId) : null, at: Date.now() };
+}
+
+app.post('/agreements/:id/disputes', requireAuth, h(async (req, res) => {
+  const a = await myAgreement(req, req.params.id);
+  const reason = req.body.reason;
+  if (!DISPUTE_REASONS[reason]) throw bad('Elige el motivo de la disputa');
+  if (!str(req.body.text)) throw bad('Describe el problema');
+  if (await one(`SELECT 1 FROM disputes WHERE agreement_id = $1 AND status = 'open'`, [a.id])) {
+    throw new HttpError(409, 'Este acuerdo ya tiene una disputa abierta');
+  }
+  const ev = await disputeEvent(req, 'open');
+  await q('INSERT INTO disputes (agreement_id, opened_by, reason, events) VALUES ($1,$2,$3,$4)', [a.id, req.user.id, reason, JSON.stringify([ev])]);
+  const [es, en] = DISPUTE_REASONS[reason];
+  const f = req.user.role === 'farmer';
+  await notifyChat(a,
+    `⚠️ ${f ? 'El caficultor' : 'El comprador'} abrió una disputa por ${es} en ${a.code}`,
+    `⚠️ ${f ? 'The farmer' : 'The buyer'} opened a ${en} dispute on ${a.code}`);
+  res.status(201).json(await S.agreement(a));
+}));
+
+app.post('/disputes/:id/comments', requireAuth, h(async (req, res) => {
+  const { d, a } = await myDispute(req, req.params.id);
+  if (d.status !== 'open') throw bad('La disputa ya está resuelta');
+  if (!str(req.body.text) && !req.body.photoId) throw bad('Escribe una respuesta');
+  const ev = await disputeEvent(req, 'comment');
+  await q(`UPDATE disputes SET events = events || $2::jsonb WHERE id = $1`, [d.id, JSON.stringify([ev])]);
+  res.status(201).json(await S.agreement(a));
+}));
+
+// La disputa la da por resuelta quien la abrió (es quien sabe si el problema se solucionó).
+app.post('/disputes/:id/resolve', requireAuth, h(async (req, res) => {
+  const { d, a } = await myDispute(req, req.params.id);
+  if (d.status !== 'open') throw bad('La disputa ya está resuelta');
+  if (d.opened_by !== req.user.id) throw forbidden('Solo quien abrió la disputa puede darla por resuelta');
+  const ev = await disputeEvent(req, 'resolve');
+  await q(
+    `UPDATE disputes SET status = 'resolved', resolved_at = now(), events = events || $2::jsonb WHERE id = $1`,
+    [d.id, JSON.stringify([ev])],
+  );
+  await notifyChat(a, `✅ La disputa de ${a.code} quedó resuelta`, `✅ The dispute on ${a.code} was resolved`);
+  res.json(await S.agreement(a));
+}));
+
 // Traducir un texto suelto (útil para vista previa)
-app.post('/translate', requireAuth, h(async (req, res) => {
+app.post('/translate', requireAuth, limit('translate', 60, MIN, (req) => req.user.id), h(async (req, res) => {
   const from = req.body.from === 'en' ? 'en' : 'es';
   const to = otherLang(from);
   res.json({ text: await translate(str(req.body.text, 4000), from, to), from, to });

@@ -1,15 +1,7 @@
-// ─────────────────────────────────────────────────────────────────
-//  DIRECCIÓN DE TU SERVIDOR EN RAILWAY
-//  Cámbiala por el dominio que te da Railway (Settings → Networking →
-//  Generate Domain), SIN la barra final. Ejemplo:
-//      https://cafedirecto-api-production.up.railway.app
-//
-//  También puedes pasarla al compilar sin editar este archivo:
-//      flutter run --dart-define=API_URL=https://...up.railway.app
-// ─────────────────────────────────────────────────────────────────
+
 const String apiUrl = String.fromEnvironment(
   'API_URL',
-  defaultValue: 'https://TU-SERVICIO.up.railway.app',
+  defaultValue: 'https://cafedirecto-production.up.railway.app',
 );
 
 /// Convierte rutas como '/images/12' en una URL completa.

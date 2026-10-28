@@ -226,7 +226,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 field('farmName', t('Nombre de la finca', 'Farm name')),
                 label(t('Departamento', 'Region')),
                 DropdownButtonFormField<String>(
-                  value: regions.contains(region) ? region : null,
+                  initialValue: regions.contains(region) ? region : null,
                   hint: Text(t('Elige…', 'Choose…')),
                   items: [for (final r in regions) DropdownMenuItem(value: r, child: Text(r, style: p.text()))],
                   onChanged: (v) => setState(() => region = v ?? region),
