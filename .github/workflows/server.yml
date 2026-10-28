@@ -25,4 +25,8 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: node --check src/index.js
+      - run: for f in $(find src -name '*.js'); do node --check $f; done
+      - name: Pruebas de la API
+        run: npm test
+        env:
+          DATABASE_URL: postgres://postgres:pg@localhost:5432/cafe
