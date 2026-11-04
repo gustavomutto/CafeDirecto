@@ -6,6 +6,8 @@ set -u
 cd "$(dirname "$0")/.."
 PORT=${PORT:-3999}
 export API_URL="http://localhost:$PORT"
+# Sin JWT_SECRET el servidor solo arranca en modo de pruebas (usa una clave aleatoria por ejecución).
+export NODE_ENV=${NODE_ENV:-test}
 LOG=$(mktemp)
 status=0
 for t in test/*.test.mjs; do

@@ -39,12 +39,15 @@ flutter run                      # usa el servidor de Railway
 **Servidor en local** (Node 20+ y PostgreSQL; con Docker es lo más fácil):
 
 ```bash
-docker run -d --name cafedirecto-db -e POSTGRES_USER=cafe -e POSTGRES_PASSWORD=cafe_local -e POSTGRES_DB=cafedirecto -p 127.0.0.1:5432:5432 postgres:16-alpine
+docker run -d --name cafedirecto-db -e POSTGRES_USER=cafe -e POSTGRES_PASSWORD=<tu-clave-local> -e POSTGRES_DB=cafedirecto -p 127.0.0.1:5432:5432 postgres:16-alpine
 cd server
 npm install
-start-local.cmd                  # Windows (o: DATABASE_URL=postgres://cafe:cafe_local@localhost:5432/cafedirecto npm start)
-npm test                         # 148 pruebas de la API
+start-local.cmd                  # Windows: crea server/.env.local (no se sube) con una JWT_SECRET aleatoria
+npm test                         # pruebas de la API (NODE_ENV=test)
 ```
+
+Las claves nunca van en el código ni en el repositorio: el servidor no arranca sin `JWT_SECRET`, salvo con
+`NODE_ENV=development` o `test`, donde usa una clave aleatoria por ejecución. Pon tu `DATABASE_URL` en `server/.env.local`.
 
 Para apuntar la app al servidor local: `flutter run --dart-define=API_URL=http://10.0.2.2:3000` (emulador)
 o la IP de tu computador en la red wifi (celular).
