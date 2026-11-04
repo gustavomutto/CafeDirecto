@@ -289,3 +289,15 @@ BEGIN
     END IF;
   END LOOP;
 END $$;
+
+-- ── Seguridad móvil (H-02): sesiones que se pueden cerrar desde el servidor ──
+-- Cada inicio de sesión crea una fila; el token lleva su id (sid). "Cerrar sesión" la revoca,
+-- así un token copiado o robado deja de servir aunque todavía no haya vencido.
+CREATE TABLE IF NOT EXISTS sessions (
+  id          TEXT PRIMARY KEY,
+  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at  TIMESTAMPTZ NOT NULL,
+  revoked_at  TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions (user_id) WHERE revoked_at IS NULL;

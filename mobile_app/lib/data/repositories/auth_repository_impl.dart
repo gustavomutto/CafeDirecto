@@ -41,6 +41,7 @@ class AuthRepositoryImpl implements AuthRepository {
     } on ApiException catch (e) {
       if (e.isUnauthorized) {
         AppLogger.i('El token guardado ya no es válido', tag: 'Auth');
+        _api.token = null; // ya no sirve: no hace falta avisar al servidor
         await logout();
       }
       // Sin internet al abrir: se queda sin usuario y la pantalla de inicio lo informa.
@@ -63,6 +64,19 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
+    if (_api.token != null) {
+      // Revoca la sesión en el servidor. Sin internet se borra igual en el teléfono.
+      // Un 401 aquí (sesión ya vencida) no debe avisar "sesión vencida": se apaga el aviso un momento.
+      final onUnauthorized = _api.onUnauthorized;
+      _api.onUnauthorized = null;
+      try {
+        await _remote.logout().timeout(const Duration(seconds: 5));
+      } catch (e) {
+        AppLogger.w('No se pudo cerrar la sesión en el servidor: $e', tag: 'Auth');
+      } finally {
+        _api.onUnauthorized = onUnauthorized;
+      }
+    }
     _api.token = null;
     await _local.clear();
   }

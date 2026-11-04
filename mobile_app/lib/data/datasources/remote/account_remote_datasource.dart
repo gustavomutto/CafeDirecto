@@ -14,6 +14,9 @@ class AccountRemoteDataSource {
 
   Future<void> forgotPassword(String email) => _api.post('/auth/forgot', {'email': email});
 
+  /// Cierra esta sesión en el servidor: el token deja de servir aunque alguien lo haya copiado (H-02).
+  Future<void> logout() => _api.post('/auth/logout');
+
   Future<AuthResponseDto> resetPassword(String email, String code, String password) async =>
       AuthResponseDto.fromJson(await _api.postMap('/auth/reset', {'email': email, 'code': code, 'password': password}));
 

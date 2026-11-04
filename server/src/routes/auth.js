@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
 const { pool, q, one } = require('../db');
-const { sign } = require('../auth');
+const { issueToken, requireAuth } = require('../auth');
 const { limit, hit } = require('../ratelimit');
 const { sendMail } = require('../mail');
 const S = require('../serialize');
@@ -47,7 +47,7 @@ r.post('/auth/register', limit('register', 10, HOUR), h(async (req, res) => {
     }
     return user;
   });
-  res.status(201).json({ token: sign(u), user: S.meUser(u) });
+  res.status(201).json({ token: await issueToken(u), user: S.meUser(u) });
 }));
 
 // Login: 10 intentos por correo y 50 por IP cada 15 minutos (frena a quien intenta adivinar contraseñas).
@@ -57,7 +57,15 @@ r.post('/auth/login', limit('login-ip', 50, 15 * MIN), limit('login', 10, 15 * M
   const u = await one('SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL', [email]);
   const ok = await bcrypt.compare(String(req.body.password || ''), u ? u.password_hash : DUMMY_HASH);
   if (!u || !ok) throw new HttpError(401, 'Correo o contraseña incorrectos');
-  res.json({ token: sign(u), user: S.meUser(u) });
+  // Limpieza: sesiones vencidas o cerradas hace más de una semana.
+  await q(`DELETE FROM sessions WHERE user_id = $1 AND (expires_at < now() OR revoked_at < now() - interval '7 days')`, [u.id]);
+  res.json({ token: await issueToken(u), user: S.meUser(u) });
+}));
+
+// Cerrar sesión: revoca SOLO la sesión de este token; las de otros teléfonos siguen abiertas (H-02).
+r.post('/auth/logout', requireAuth, h(async (req, res) => {
+  await q('UPDATE sessions SET revoked_at = now() WHERE id = $1 AND revoked_at IS NULL', [req.sessionId]);
+  res.json({ ok: true });
 }));
 
 // Recuperar contraseña: se envía un código de 6 dígitos por correo (vence en 15 min).
@@ -111,7 +119,8 @@ r.post('/auth/reset', limit('reset-ip', 20, 15 * MIN), h(async (req, res) => {
     [u.id, await bcrypt.hash(password, 10)],
   );
   await q('DELETE FROM password_resets WHERE user_id = $1', [u.id]);
-  res.json({ token: sign(nu), user: S.meUser(nu) });
+  await q('UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL', [u.id]);
+  res.json({ token: await issueToken(nu), user: S.meUser(nu) });
 }));
 
 module.exports = r;
