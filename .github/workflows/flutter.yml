@@ -60,7 +60,36 @@ jobs:
           fi
           exit $code
 
+      # Firma de lanzamiento (H-04). Con los secretos del repositorio se firma con la clave propia.
+      # Al publicar un Release es obligatoria: un APK público no va firmado con la clave de depuración.
+      # Secretos (Settings → Secrets and variables → Actions): ANDROID_KEYSTORE_BASE64,
+      # ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS y ANDROID_KEY_PASSWORD (ver docs/PUBLICAR_EN_PLAY.md).
+      - name: Clave de firma
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/cafedirecto-release.jks
+            printf 'storePassword=%s
+keyPassword=%s
+keyAlias=%s
+storeFile=../cafedirecto-release.jks
+' \n              "$KEYSTORE_PASSWORD" "${KEY_PASSWORD:-$KEYSTORE_PASSWORD}" "${KEY_ALIAS:-cafedirecto}" > android/key.properties
+            echo "::notice title=Firma::APK firmado con la clave de lanzamiento"
+          elif [ "$EVENT" = "release" ]; then
+            echo "::error title=Firma::Faltan los secretos ANDROID_KEYSTORE_BASE64 y ANDROID_KEYSTORE_PASSWORD. Un Release no se publica con la clave de depuración."
+            exit 1
+          else
+            echo "::warning title=Firma::Sin clave de lanzamiento: este APK de prueba va firmado con la clave de depuración"
+          fi
+
       - name: Construir APK
+        env:
+          REQUIRE_RELEASE_SIGNING: ${{ github.event_name == 'release' }}
         run: |
           set +e
           # --obfuscate: los nombres de clases y funciones de Dart no quedan legibles en el APK (H-03).

@@ -21,7 +21,20 @@ storeFile=../cafedirecto-release.jks
 ```
 
 `key.properties` y los `.jks` están en `.gitignore`: **no se suben a GitHub**. Si el archivo existe,
-`build.gradle.kts` firma con esa clave; si no, con la de depuración (para pruebas).
+`build.gradle.kts` firma con esa clave; si no, con la de depuración (solo para pruebas, y Gradle lo avisa).
+
+### Firma en GitHub Actions (para los APK de Releases)
+
+Al publicar un Release, CI **exige** la clave de lanzamiento: sin ella la compilación falla en lugar de
+publicar un APK firmado con la clave de depuración. Agrega estos secretos en GitHub
+(*Settings → Secrets and variables → Actions → New repository secret*):
+
+| Secreto | Valor |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | El `.jks` en Base64. En PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("cafedirecto-release.jks")) \| Set-Clipboard` |
+| `ANDROID_KEYSTORE_PASSWORD` | La contraseña del `.jks` |
+| `ANDROID_KEY_ALIAS` | `cafedirecto` |
+| `ANDROID_KEY_PASSWORD` | La contraseña de la clave (si no la pones, se usa la del `.jks`) |
 
 ## 3. Generar el paquete
 
