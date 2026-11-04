@@ -74,11 +74,12 @@ jobs:
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "$KEYSTORE_BASE64" | base64 -d > android/cafedirecto-release.jks
-            printf 'storePassword=%s
-keyPassword=%s
-keyAlias=%s
-storeFile=../cafedirecto-release.jks
-' \n              "$KEYSTORE_PASSWORD" "${KEY_PASSWORD:-$KEYSTORE_PASSWORD}" "${KEY_ALIAS:-cafedirecto}" > android/key.properties
+            {
+              echo "storePassword=$KEYSTORE_PASSWORD"
+              echo "keyPassword=${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+              echo "keyAlias=${KEY_ALIAS:-cafedirecto}"
+              echo "storeFile=../cafedirecto-release.jks"
+            } > android/key.properties
             echo "::notice title=Firma::APK firmado con la clave de lanzamiento"
           elif [ "$EVENT" = "release" ]; then
             echo "::error title=Firma::Faltan los secretos ANDROID_KEYSTORE_BASE64 y ANDROID_KEYSTORE_PASSWORD. Un Release no se publica con la clave de depuración."
