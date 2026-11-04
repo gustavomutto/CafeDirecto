@@ -2,6 +2,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const { toEnglish } = require('../src/lib/i18n.js');
 
@@ -12,7 +13,7 @@ const rnd=Math.random().toString(36).slice(2,7);
 
 // 1) Todo mensaje de error escrito en el código tiene su versión en inglés.
 const files=[]; const walk=(d)=>{for(const f of readdirSync(d)){const p=join(d,f);statSync(p).isDirectory()?walk(p):p.endsWith('.js')&&files.push(p);}};
-walk(new URL('../src',import.meta.url).pathname);
+walk(fileURLToPath(new URL('../src',import.meta.url))); // fileURLToPath: también funciona en Windows
 const RE=/(?:bad|notFound|forbidden|conflict|new HttpError\(\d+,|inRange\([^,]+,[^,]+,[^,]+,|error:)\s*\(?\s*(['`])((?:(?!\1).)+)\1/g;
 const missing=[];
 for(const f of files){ if(f.endsWith('i18n.js')) continue; const src=readFileSync(f,'utf8'); let m;
