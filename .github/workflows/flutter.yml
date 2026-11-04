@@ -63,7 +63,9 @@ jobs:
       - name: Construir APK
         run: |
           set +e
-          flutter build apk --release > build.txt 2>&1
+          # --obfuscate: los nombres de clases y funciones de Dart no quedan legibles en el APK (H-03).
+          # Los símbolos para leer los errores quedan aparte, en build/symbols (no van dentro del APK).
+          flutter build apk --release --obfuscate --split-debug-info=build/symbols > build.txt 2>&1
           code=$?
           cat build.txt
           if [ $code -ne 0 ]; then
@@ -77,6 +79,14 @@ jobs:
           name: cafedirecto-apk
           path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
+
+      # Símbolos de la versión ofuscada: sin ellos los errores se ven como nombres sin sentido.
+      #   flutter symbolize -i <error.txt> -d app.android-arm64.symbols
+      - uses: actions/upload-artifact@v6
+        with:
+          name: cafedirecto-simbolos
+          path: mobile_app/build/symbols
+          retention-days: 90
 
       # Al publicar un Release (GitHub → Releases → Draft a new release → etiqueta v3.1.1 → Publish)
       # se adjunta el APK. Enlace fijo para descargar siempre la última versión, sin cuenta de GitHub:

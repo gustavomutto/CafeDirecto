@@ -27,10 +27,13 @@ storeFile=../cafedirecto-release.jks
 
 ```powershell
 cd mobile_app
-flutter build appbundle --release
+flutter build appbundle --release --obfuscate --split-debug-info=build/symbols
 ```
 
 Queda en `build\app\outputs\bundle\release\app-release.aab`. Ese archivo se sube a Google Play Console.
+
+`--obfuscate` hace ilegibles los nombres del código Dart dentro de la app. Guarda la carpeta `build\symbols`
+de cada versión (no se sube a GitHub): sin ella no se pueden leer los errores que reporten los usuarios.
 
 ## 4. Datos que pide Google Play
 

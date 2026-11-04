@@ -28,7 +28,7 @@ flutter test
 ## Generar el APK o el paquete para Google Play
 
 ```bash
-flutter build appbundle --dart-define=API_URL=https://TU-API.up.railway.app
+flutter build appbundle --obfuscate --split-debug-info=build/symbols --dart-define=API_URL=https://TU-API.up.railway.app
 ```
 
 Antes de publicar en Google Play falta configurar la firma de la versión de lanzamiento (`android/app/build.gradle.kts` todavía firma con la clave de depuración) y reemplazar el ícono por defecto de Flutter en `android/app/src/main/res/mipmap-*`.
