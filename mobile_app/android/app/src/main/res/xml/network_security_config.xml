@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Red de la app (hallazgo H-06): solo HTTPS y solo certificados de autoridades del sistema.
+     No se acepta tráfico en claro (http://) ni certificados instalados por el usuario.
+     La versión de depuración (src/debug) permite http hacia el servidor local del emulador. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -14,12 +14,16 @@ import 'package:flutter/services.dart';
 
 import 'app/app.dart';
 import 'app/di.dart';
+import 'core/config/env.dart';
 import 'core/logging/app_logger.dart';
 import 'core/notifications/local_notifications.dart';
 import 'presentation/providers/app_context.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Una versión publicada con un servidor http:// no arranca: los datos viajarían sin cifrar (H-06).
+  final insecure = insecureApiUrlReason(apiUrl, release: kReleaseMode);
+  if (insecure != null) throw StateError(insecure);
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   // Errores de dibujo (Flutter) y errores asíncronos sin capturar: quedan en el registro
   // en lugar de cerrar la app sin dejar rastro.
