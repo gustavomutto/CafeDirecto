@@ -1,0 +1,5 @@
+# aapt2: networkSecurityConfig / usesCleartextTraffic en el manifest del APK
+0
+# env.dart acepta cualquier esquema:
+5:const String apiUrl = String.fromEnvironment(
+7:  defaultValue: 'https://cafedirecto-production.up.railway.app',

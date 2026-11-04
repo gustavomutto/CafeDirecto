@@ -1,0 +1,5 @@
+# 1) Sin JWT_SECRET y sin NODE_ENV (como en un servidor que no es Railway):
+Falta la variable JWT_SECRET (un texto largo y aleatorio, 48 caracteres o más). En Railway agrégala en Variables. Para trabajar en tu computador usa start-local.cmd o NODE_ENV=development.
+código de salida: 1
+# 2) Modo de pruebas, mismo ataque:
+H-01 CORREGIDO   token falsificado con la clave pública del repo → HTTP 401

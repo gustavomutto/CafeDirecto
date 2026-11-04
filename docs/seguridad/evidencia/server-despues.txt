@@ -1,0 +1,3 @@
+H-01 CORREGIDO   token falsificado con la clave pública del repo → HTTP 401
+H-02 CORREGIDO   cerrar sesión → HTTP 200; el mismo token después → HTTP 401; vigencia del token: 30 días
+(cuenta de prueba sec.1793767519827fa53@example.test)

@@ -1,0 +1,8 @@
+# aapt2: networkSecurityConfig / usesCleartextTraffic en el manifest del APK
+        A: http://schemas.android.com/apk/res/android:usesCleartextTraffic(0x010104ec)=false
+        A: http://schemas.android.com/apk/res/android:networkSecurityConfig(0x01010527)=@0x7f110001
+# contenido de xml/network_security_config en el APK (res/8G.xml)
+    E: base-config (line=6)
+      A: cleartextTrafficPermitted=false
+            E: certificates (line=8)
+              A: src="system" (Raw: "system")

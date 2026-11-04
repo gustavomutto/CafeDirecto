@@ -1,0 +1,9 @@
+ChatRoomController: 2
+SessionLocalDataSource: 1
+AuthRepositoryImpl: 1
+ApiClient: 2
+saveToken: 1
+readToken: 1
+validSignature: 0
+cafedirecto-token: 1
+rutas API visibles: [b'/agreements', b'/auctions', b'/auctions/auction', b'/auctions/auctions', b'/auctions/create', b'/auth', b'/auth/auth', b'/auth/forgot', b'/auth/login', b'/auth/register', b'/auth/reset', b'/conversations']

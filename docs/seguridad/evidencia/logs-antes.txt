@@ -1,0 +1,5 @@
+# Registros con el correo del usuario:
+lib/data/repositories/auth_repository_impl.dart:39:      AppLogger.i('Sesión restaurada para ${account.user.email}', tag: 'Auth');
+lib/main.dart:44:  AppLogger.i('App iniciada · sesión: ${deps.session.loggedIn ? deps.session.user!.email : 'ninguna'}');
+lib/presentation/providers/session_provider.dart:65:    AppLogger.i('Entró ${user?.email} (${user?.role})', tag: 'Sesión');
+lib/presentation/providers/session_provider.dart:70:    AppLogger.i('Cuenta creada: ${user?.email} (${user?.role})', tag: 'Sesión');

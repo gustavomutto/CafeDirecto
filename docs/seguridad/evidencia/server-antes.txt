@@ -1,0 +1,3 @@
+H-01 VULNERABLE  token falsificado con la clave pública del repo → HTTP 200 (entra como sec.1793766908307db94@example.test)
+H-02 VULNERABLE  cerrar sesión → HTTP 404; el mismo token después → HTTP 200; vigencia del token: 90 días
+(cuenta de prueba sec.1793766908307db94@example.test)

@@ -1,0 +1,16 @@
+
+> cafedirecto-api@3.2.0 test
+> bash test/run.sh
+
+── test/flow.test.mjs
+ok 41 fail 0
+── test/v13.test.mjs
+ok 27 fail 0
+── test/v2.test.mjs
+ok 43 fail 0
+── test/v3.test.mjs
+ok 24 fail 0
+── test/v4.test.mjs
+ok 15 fail 0
+── test/v5.test.mjs
+ok 9 fail 0

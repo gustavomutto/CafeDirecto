@@ -1,0 +1,19 @@
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name              Current   Upgradable  Resolvable  Latest  
+
+direct dependencies:     
+google_fonts              *6.3.3    *6.3.3      9.0.0       9.0.0   
+
+transitive dependencies: 
+cross_file                *0.3.5+5  *0.3.5+5    *0.3.5+5    0.4.0   
+cupertino_ui              -         -           1.1.6       1.1.6   
+flutter_localizations     -         -           (sdk)       (sdk)   
+intl                      -         -           0.20.3      0.20.3  
+material_color_utilities  *0.13.0   *0.13.0     *0.13.0     0.13.1  
+material_ui               -         -           1.10.0      1.10.0  
+objective_c               *9.6.2    *9.6.2      *9.6.2      9.6.3   
+
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml, or run `flutter pub upgrade --major-versions`.

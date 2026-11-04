@@ -1,0 +1,31 @@
+
+> cafedirecto-api@3.2.0 test
+> bash test/run.sh
+
+── test/flow.test.mjs
+ok 41 fail 0
+── test/v13.test.mjs
+ok 27 fail 0
+── test/v2.test.mjs
+ok 43 fail 0
+── test/v3.test.mjs
+ok 24 fail 0
+── test/v4.test.mjs
+node:fs:1584
+  const result = binding.readdir(
+                         ^
+
+Error: ENOENT: no such file or directory, scandir 'C:\~\OneDrive\Escritorio\CafeDirecto\server\src'
+    at readdirSync (node:fs:1584:26)
+    at walk (file:///~/OneDrive/Escritorio/CafeDirecto/server/test/v4.test.mjs:14:49)
+    at file:///~/OneDrive/Escritorio/CafeDirecto/server/test/v4.test.mjs:15:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:271:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:578:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5) {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'scandir',
+  path: 'C:\\~\\OneDrive\\Escritorio\\CafeDirecto\\server\\src'
+}
+
+Node.js v22.14.0

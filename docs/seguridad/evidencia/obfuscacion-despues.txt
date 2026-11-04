@@ -1,0 +1,7 @@
+ChatRoomController: 0
+SessionLocalDataSource: 0
+AuthRepositoryImpl: 0
+ApiClient: 0
+saveToken: 0
+readToken: 0
+cafedirecto-token: 1

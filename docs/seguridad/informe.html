@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Informe de seguridad · CaféDirecto</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+  :root { --verde: #0b7a43; --verde-claro: #e8f4ed; --tinta: #1d2a22; --gris: #5b6660; --linea: #d5ddd8; --rojo: #b3261e; --ambar: #8a5a00; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Calibri, Arial, sans-serif; color: var(--tinta); font-size: 10.5pt; line-height: 1.45; margin: 0; }
+  h1 { font-size: 22pt; color: var(--verde); margin: 0 0 6px; }
+  h2 { font-size: 14.5pt; color: var(--verde); border-bottom: 2px solid var(--verde); padding-bottom: 4px; margin: 26px 0 10px; break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 16px 0 6px; break-after: avoid; }
+  p { margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 9.2pt; break-inside: auto; }
+  th { background: var(--verde); color: #fff; text-align: left; padding: 6px 7px; font-weight: 600; }
+  td { padding: 5px 7px; border-bottom: 1px solid var(--linea); vertical-align: top; }
+  tr { break-inside: avoid; }
+  td:first-child { white-space: nowrap; }
+  tr:nth-child(even) td { background: #f6f9f7; }
+  code, .mono { font-family: Consolas, "Courier New", monospace; font-size: 8.8pt; }
+  pre { font-family: Consolas, "Courier New", monospace; font-size: 8.4pt; background: #f3f5f4; border: 1px solid var(--linea); border-radius: 6px; padding: 8px 10px; white-space: pre-wrap; margin: 6px 0 10px; break-inside: avoid; }
+  .portada { border-left: 6px solid var(--verde); background: var(--verde-claro); padding: 14px 18px; margin-bottom: 14px; }
+  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; font-size: 10pt; margin-top: 10px; }
+  .meta b { color: var(--verde); }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 12px 0; }
+  .kpi { border: 1px solid var(--linea); border-radius: 8px; padding: 10px; }
+  .kpi b { display: block; font-size: 18pt; color: var(--verde); line-height: 1.1; }
+  .kpi span { font-size: 8.8pt; color: var(--gris); }
+  .estado { font-weight: 700; white-space: nowrap; }
+  .cumple { color: var(--verde); }
+  .nocumple { color: var(--rojo); }
+  .na { color: var(--gris); }
+  .sev-alta { color: var(--rojo); font-weight: 700; }
+  .sev-media { color: var(--ambar); font-weight: 700; }
+  .sev-baja { color: var(--gris); font-weight: 700; }
+  .nota { background: #fff8e1; border-left: 4px solid #e0b100; padding: 8px 12px; margin: 10px 0; font-size: 9.6pt; }
+  .salto { break-before: page; }
+  .ok { color: var(--verde); font-weight: 700; }
+  .mal { color: var(--rojo); font-weight: 700; }
+  .pie { color: var(--gris); font-size: 8.5pt; margin-top: 24px; border-top: 1px solid var(--linea); padding-top: 6px; }
+  .diagrama { border: 1px solid var(--linea); border-radius: 8px; padding: 6px; margin: 8px 0; break-inside: avoid; }
+  ul { margin: 4px 0 8px 18px; padding: 0; }
+  li { margin: 2px 0; }
+</style>
+</head>
+<body>
+
+<div class="portada">
+  <h1>Informe de seguridad · CaféDirecto</h1>
+  <p>Auditoría con OWASP Mobile Top 10 (2024), correcciones en código y verificación antes y después.</p>
+  <div class="meta">
+    <div><b>Materia:</b> Programación Móvil</div>
+    <div><b>Profesor:</b> Alex Vacca</div>
+    <div><b>Grupo:</b> [Nombres de los integrantes]</div>
+    <div><b>Entrega:</b> 16 de noviembre de 2026</div>
+    <div><b>Proyecto:</b> CaféDirecto 3.2 · app Flutter (Android) + API Node.js/PostgreSQL</div>
+    <div><b>Repositorio:</b> github.com/gustavomutto/CafeDirecto · rama <code>Robert</code></div>
+  </div>
+</div>
+
+<h2>Resumen</h2>
+<p>Se auditaron la app Flutter y su API. De los diez riesgos del Top 10, <b>3 se cumplen</b> y <b>7 tenían algo por corregir</b>.
+Se registraron <b>8 hallazgos</b>: <b>7 se corrigieron</b>, cada uno en su propio commit con su ID, y se verificaron
+repitiendo la misma prueba. El hallazgo que queda abierto es de severidad baja y tiene un plan.</p>
+<div class="kpis">
+  <div class="kpi"><b>8</b><span>hallazgos registrados</span></div>
+  <div class="kpi"><b>7</b><span>corregidos y verificados (mínimo pedido: 5)</span></div>
+  <div class="kpi"><b>5 de 5</b><span>mejoras obligatorias cumplidas</span></div>
+  <div class="kpi"><b>159 + 39</b><span>pruebas automáticas en verde (API + app)</span></div>
+</div>
+<p>Los dos hallazgos más graves estaban en el servidor. Uno era una <b>clave de firma de sesiones publicada en el repositorio</b>
+(H-01): con ella cualquiera entraba como cualquier usuario. El otro, <b>sesiones que no se podían cerrar</b> (H-02): un token
+robado seguía sirviendo 90 días después de cerrar sesión.</p>
+
+<h2>Fase 1 · Modelo de amenazas</h2>
+<h3>Diagrama de la app y flujo de datos</h3>
+<div class="diagrama">
+<svg viewBox="0 0 760 360" width="100%" role="img" aria-label="Diagrama de la app, la API y los servicios externos" font-family="Segoe UI, Arial" font-size="12">
+  <defs><marker id="f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5b6660"/></marker></defs>
+  <rect x="10" y="10" width="290" height="340" rx="10" fill="#f6f9f7" stroke="#0b7a43" stroke-width="1.5"/>
+  <text x="22" y="32" font-weight="700" fill="#0b7a43" font-size="13">Teléfono Android (no es de confianza)</text>
+  <rect x="26" y="46" width="258" height="96" rx="8" fill="#fff" stroke="#9fb1a6"/>
+  <text x="38" y="66" font-weight="700">App Flutter</text>
+  <text x="38" y="84" fill="#5b6660">Pantallas: entrar, explorar, chat, cotización,</text>
+  <text x="38" y="100" fill="#5b6660">acuerdos, subastas, perfil</text>
+  <text x="38" y="118" fill="#5b6660">Dictado por voz (reconocimiento del teléfono)</text>
+  <text x="38" y="134" fill="#5b6660">Cámara y galería (fotos de lotes y chat)</text>
+  <rect x="26" y="156" width="258" height="62" rx="8" fill="#fff" stroke="#9fb1a6"/>
+  <text x="38" y="176" font-weight="700">Almacenamiento cifrado</text>
+  <text x="38" y="194" fill="#5b6660">Token de sesión · flutter_secure_storage</text>
+  <text x="38" y="210" fill="#5b6660">(Android Keystore)</text>
+  <rect x="26" y="232" width="258" height="46" rx="8" fill="#fff" stroke="#9fb1a6"/>
+  <text x="38" y="252" font-weight="700">SharedPreferences</text>
+  <text x="38" y="268" fill="#5b6660">Apariencia y último aviso (no secretos)</text>
+  <rect x="26" y="292" width="258" height="46" rx="8" fill="#fff" stroke="#9fb1a6"/>
+  <text x="38" y="312" font-weight="700">Registros (Logcat)</text>
+  <text x="38" y="328" fill="#5b6660">Sin correos ni tokens (H-05)</text>
+
+  <rect x="380" y="60" width="210" height="150" rx="10" fill="#fff" stroke="#0b7a43" stroke-width="1.5"/>
+  <text x="392" y="82" font-weight="700" fill="#0b7a43" font-size="13">API en Railway</text>
+  <text x="392" y="102" fill="#5b6660">Node.js + Express</text>
+  <text x="392" y="120" fill="#5b6660">JWT HS256 + sesiones (H-02)</text>
+  <text x="392" y="138" fill="#5b6660">Límite de intentos, validación</text>
+  <text x="392" y="156" fill="#5b6660">Fotos con URL firmada (HMAC)</text>
+  <text x="392" y="174" fill="#5b6660">Permisos por rol y por dueño</text>
+  <text x="392" y="192" fill="#5b6660">Secretos solo en variables (H-01)</text>
+  <rect x="380" y="250" width="210" height="64" rx="10" fill="#fff" stroke="#0b7a43" stroke-width="1.5"/>
+  <text x="392" y="272" font-weight="700" fill="#0b7a43" font-size="13">PostgreSQL</text>
+  <text x="392" y="292" fill="#5b6660">Usuarios, chats, fotos, acuerdos,</text>
+  <text x="392" y="306" fill="#5b6660">sesiones</text>
+  <rect x="620" y="40" width="130" height="270" rx="10" fill="#fff" stroke="#9fb1a6" stroke-dasharray="4 3"/>
+  <text x="632" y="62" font-weight="700">Servicios externos</text>
+  <text x="632" y="90" fill="#5b6660">DeepL / Google /</text>
+  <text x="632" y="106" fill="#5b6660">MyMemory: texto</text>
+  <text x="632" y="122" fill="#5b6660">de los mensajes</text>
+  <text x="632" y="152" fill="#5b6660">Resend: correo</text>
+  <text x="632" y="168" fill="#5b6660">con el código</text>
+  <text x="632" y="198" fill="#5b6660">GitHub Releases:</text>
+  <text x="632" y="214" fill="#5b6660">APK publicado</text>
+  <text x="632" y="214" dy="16" fill="#5b6660">(firma, H-04)</text>
+  <text x="632" y="262" fill="#5b6660">Google Fonts y</text>
+  <text x="632" y="278" fill="#5b6660">Unsplash (imágenes)</text>
+  <g stroke="#5b6660" stroke-width="1.4" fill="none">
+    <path d="M300 110 H378" marker-end="url(#f)" marker-start="url(#f)"/>
+    <path d="M485 210 V248" marker-end="url(#f)" marker-start="url(#f)"/>
+    <path d="M590 120 H618" marker-end="url(#f)"/>
+  </g>
+  <text x="306" y="100" fill="#0b7a43" font-weight="700" font-size="11">HTTPS (H-06)</text>
+  <text x="306" y="128" fill="#5b6660" font-size="10.5">token Bearer</text>
+</svg>
+</div>
+<p>Regla base del data sheet: el teléfono y la app instalada no son de confianza. Por eso cada decisión
+(quién ve un chat, quién marca un acuerdo como entregado, quién descarga una foto) se valida en el servidor.</p>
+
+<h3>Datos sensibles que maneja la app</h3>
+<table>
+  <tr><th style="width:24%">Dato</th><th style="width:24%">Dónde está</th><th>Por qué es sensible</th></tr>
+  <tr><td>Contraseña</td><td>Solo viaja al servidor; se guarda con bcrypt</td><td>Da acceso a la cuenta (y suele repetirse en otros servicios)</td></tr>
+  <tr><td>Token de sesión (JWT)</td><td>Keystore del teléfono · cabecera de cada petición</td><td>Quien lo tenga actúa como el usuario</td></tr>
+  <tr><td>Código de recuperación</td><td>Correo del usuario · hash en la base</td><td>Permite cambiar la contraseña</td></tr>
+  <tr><td>Correo, teléfono y nombre</td><td>Base de datos · perfil</td><td>Datos personales (Ley 1581 de 2012)</td></tr>
+  <tr><td>Ubicación de la finca</td><td>Departamento y municipio en el perfil</td><td>Ubica a una persona y su producción</td></tr>
+  <tr><td>Chats, fotos y precios negociados</td><td>Base de datos · pantalla del teléfono</td><td>Información comercial privada entre caficultor y comprador</td></tr>
+  <tr><td>Voz del usuario</td><td>Se procesa en el teléfono; solo llega el texto</td><td>Dato biométrico si se enviara</td></tr>
+</table>
+
+<h3>Amenazas propias de CaféDirecto</h3>
+<table>
+  <tr><th style="width:5%">#</th><th style="width:25%">Amenaza</th><th style="width:20%">Quién podría aprovecharla</th><th>Por dónde · qué ganaría</th><th style="width:12%">Control</th></tr>
+  <tr><td>A1</td><td>Falsificar sesiones y entrar como otro usuario</td><td>Cualquiera que lea el repositorio público</td><td>Firmar un JWT con la clave de desarrollo publicada; ver chats, precios y cerrar acuerdos a nombre de otro</td><td>H-01</td></tr>
+  <tr><td>A2</td><td>Robo o copia del token de sesión</td><td>Otra persona con acceso al teléfono, una app maliciosa o alguien que vio un registro</td><td>El token sigue sirviendo aunque el dueño cierre sesión; suplantación durante semanas</td><td>H-02, H-05</td></tr>
+  <tr><td>A3</td><td>APK modificado o falso</td><td>Un intermediario de compra que quiera engañar a caficultores</td><td>Reempaquetar la app (lógica legible, firma de depuración) y distribuirla por WhatsApp como "versión nueva" para robar credenciales</td><td>H-03, H-04</td></tr>
+  <tr><td>A4</td><td>Interceptar la red</td><td>Quien controle una wifi pública rural o de un evento cafetero</td><td>Leer contraseñas y mensajes si la app usara http</td><td>H-06</td></tr>
+  <tr><td>A5</td><td>Abusar de la API</td><td>Bots</td><td>Adivinar contraseñas, crear cuentas masivas, gastar la traducción</td><td>Ya controlado: límites de intentos</td></tr>
+</table>
+
+<h2 class="salto">Fase 2 · Auditoría con OWASP Mobile Top 10 (2024)</h2>
+<h3>Técnicas usadas (se pedían al menos dos; se usaron cinco)</h3>
+<table>
+  <tr><th style="width:30%">Técnica</th><th>Cómo se hizo</th></tr>
+  <tr><td>1. Búsqueda de secretos en el código y en el historial de Git</td><td>Script propio (<code>herramientas/secret-scan.py</code>) que revisa cada línea agregada en los 33 commits de todas las ramas con patrones de claves (AWS, GitHub, Google, Resend, JWT, URL con contraseña, asignaciones de secretos). Se reemplazó a gitleaks porque no se usó Docker.</td></tr>
+  <tr><td>2. Análisis del APK de lanzamiento</td><td><code>flutter build apk --release</code> y luego <code>aapt2 dump xmltree</code> (manifest), <code>apksigner verify --print-certs</code> (firma), búsqueda de nombres dentro de <code>libapp.so</code> (ofuscación) y <code>mapping.txt</code> (R8).</td></tr>
+  <tr><td>3. Revisión de dependencias</td><td><code>npm audit --omit=dev</code> en el servidor y <code>flutter pub outdated</code> en la app.</td></tr>
+  <tr><td>4. Revisión de <code>AndroidManifest.xml</code> y permisos</td><td>Permisos pedidos, componentes exportados, copias de seguridad, tráfico en claro.</td></tr>
+  <tr><td>5. Pruebas dinámicas contra la API local</td><td>Script (<code>herramientas/security-check.mjs</code>) que intenta cada ataque contra el servidor con PostgreSQL local y dice si sigue abierto; más las 150 pruebas existentes de la API.</td></tr>
+</table>
+<p class="nota">No se usó Logcat ni mitmproxy porque el equipo no tiene emulador Android ni teléfono conectado. La versión de depuración
+ya queda preparada para mitmproxy (H-06 acepta certificados del usuario solo en depuración).</p>
+
+<h3>Revisión de los diez riesgos</h3>
+<table>
+  <tr><th style="width:6%">ID</th><th style="width:20%">Riesgo</th><th style="width:11%">Estado</th><th>Justificación</th></tr>
+  <tr><td>M1</td><td>Improper Credential Usage</td><td class="estado nocumple">No cumple</td><td>La clave JWT de respaldo estaba escrita en el código y publicada; <code>start-local.cmd</code> traía claves (H-01). No hay llaves de servicios de terceros en el código ni en el historial.</td></tr>
+  <tr><td>M2</td><td>Inadequate Supply Chain Security</td><td class="estado nocumple">No cumple (parcial)</td><td>Servidor: <code>npm audit</code> = 0 vulnerabilidades. App: 12 dependencias transitivas desactualizadas (H-07).</td></tr>
+  <tr><td>M3</td><td>Insecure Authentication/Authorization</td><td class="estado nocumple">No cumple</td><td>El servidor valida sesión y permisos en cada petición, pero cerrar sesión no invalidaba el token y este duraba 90 días (H-02).</td></tr>
+  <tr><td>M4</td><td>Insufficient Input/Output Validation</td><td class="estado cumple">Cumple</td><td>El servidor valida tipo y rango de cada campo (<code>inRange</code>, reglas <code>CHECK</code>), revisa el tipo real de las fotos y que cada foto sea del usuario. La app valida correo y contraseña. No hay deep links ni WebView.</td></tr>
+  <tr><td>M5</td><td>Insecure Communication</td><td class="estado nocumple">No cumple (parcial)</td><td>La API usa HTTPS y Android 9+ bloquea http por defecto, pero no había configuración explícita y la app aceptaba un servidor http en la versión publicada (H-06).</td></tr>
+  <tr><td>M6</td><td>Inadequate Privacy Controls</td><td class="estado nocumple">No cumple (parcial)</td><td>Hay política de privacidad, eliminación de cuenta y permisos justificados (micrófono para dictado). Pero la app escribía el correo del usuario en los registros (H-05).</td></tr>
+  <tr><td>M7</td><td>Insufficient Binary Protections</td><td class="estado nocumple">No cumple</td><td>R8 activo para Java/Kotlin, pero el código Dart no estaba ofuscado: nombres como <code>SessionLocalDataSource</code> o <code>saveToken</code> se leían en el binario (H-03).</td></tr>
+  <tr><td>M8</td><td>Security Misconfiguration</td><td class="estado nocumple">No cumple</td><td>Sin modo debug en release, copias de seguridad apagadas y solo la actividad principal exportada. Pero el APK público iba firmado con la clave de depuración (H-04).</td></tr>
+  <tr><td>M9</td><td>Insecure Data Storage</td><td class="estado cumple">Cumple</td><td>El token va en Android Keystore con <code>flutter_secure_storage</code> 11 (no usa la librería obsoleta EncryptedSharedPreferences); <code>allowBackup=false</code>. Queda una mejora baja: proteger la pantalla de capturas (H-08).</td></tr>
+  <tr><td>M10</td><td>Insufficient Cryptography</td><td class="estado cumple">Cumple</td><td>bcrypt para contraseñas y códigos, HMAC-SHA256 para firmar fotos, JWT solo HS256, números aleatorios con <code>crypto</code>. No se usa MD5 ni SHA-1.</td></tr>
+</table>
+
+<h3>Hallazgos</h3>
+<table>
+  <tr><th style="width:6%">ID</th><th style="width:7%">Riesgo</th><th style="width:27%">Descripción</th><th style="width:25%">Evidencia</th><th style="width:8%">Severidad</th><th>Corrección propuesta</th></tr>
+  <tr><td>H-01</td><td>M1</td><td>Sin <code>JWT_SECRET</code>, fuera de Railway el servidor usaba una clave fija publicada en GitHub</td><td>Token firmado con esa clave → <b>HTTP 200</b>, entra como el usuario (<code>server-antes.txt</code>)</td><td class="sev-alta">Alta</td><td>Sin clave fija: no arrancar sin <code>JWT_SECRET</code>; en desarrollo, clave aleatoria; <code>.env.local</code> fuera de git</td></tr>
+  <tr><td>H-02</td><td>M3</td><td>Cerrar sesión no invalidaba el token en el servidor; vigencia de 90 días</td><td>Después de "cerrar sesión" el mismo token → <b>HTTP 200</b>; <code>/auth/logout</code> → 404</td><td class="sev-alta">Alta</td><td>Sesiones en la base, token con id de sesión, <code>POST /auth/logout</code>, 30 días</td></tr>
+  <tr><td>H-03</td><td>M7</td><td>Código Dart sin ofuscar en el APK de lanzamiento</td><td>Nombres legibles en <code>libapp.so</code>: <code>ChatRoomController</code> ×2, <code>SessionLocalDataSource</code>, <code>saveToken</code>… (<code>obfuscacion-antes.txt</code>)</td><td class="sev-media">Media</td><td><code>--obfuscate --split-debug-info</code> en CI y en la guía de publicación</td></tr>
+  <tr><td>H-04</td><td>M8</td><td>APK de lanzamiento firmado con la clave de depuración y publicado en Releases</td><td><code>apksigner</code>: <b>CN=Android Debug</b> (<code>firma-antes.txt</code>)</td><td class="sev-media">Media</td><td>Firma desde secretos de GitHub; un Release sin clave falla; aviso en Gradle</td></tr>
+  <tr><td>H-05</td><td>M6</td><td>La app escribía el correo del usuario en los registros</td><td>4 líneas de código; prueba: "Entró lena@nordlicht.de (buyer)" (<code>logs-antes.txt</code>, <code>h05-prueba-antes.txt</code>)</td><td class="sev-media">Media</td><td>Registrar el id del usuario, nunca el correo</td></tr>
+  <tr><td>H-06</td><td>M5</td><td>HTTPS no forzado por configuración; un release con <code>API_URL=http://</code> funcionaría</td><td>Manifest del APK sin <code>networkSecurityConfig</code>; <code>env.dart</code> acepta cualquier esquema (<code>red-antes.txt</code>)</td><td class="sev-baja">Baja</td><td>Network Security Config sin tráfico en claro; la app no arranca con http en release</td></tr>
+  <tr><td>H-07</td><td>M2</td><td>12 dependencias transitivas de la app desactualizadas</td><td><code>flutter pub outdated</code> (<code>dependencias-app-antes.txt</code>)</td><td class="sev-baja">Baja</td><td><code>flutter pub upgrade</code> dentro de las versiones permitidas</td></tr>
+  <tr><td>H-08</td><td>M9</td><td>Sin protección de pantalla: chats y precios aparecen en capturas y en "apps recientes"</td><td><code>MainActivity.kt</code> sin <code>FLAG_SECURE</code></td><td class="sev-baja">Baja</td><td><code>FLAG_SECURE</code> en las pantallas de chat, cotización y contraseña. <b>Abierto</b>: requiere un teléfono o emulador para verificarlo</td></tr>
+</table>
+
+<h2 class="salto">Fase 3 · Correcciones</h2>
+<p>Cada corrección es un commit en la rama <code>Robert</code> cuyo mensaje empieza con el ID del hallazgo.</p>
+<table>
+  <tr><th style="width:6%">ID</th><th style="width:10%">Commit</th><th>Qué se cambió</th></tr>
+  <tr><td>H-01</td><td class="mono">e4df2cb</td><td><code>lib/secrets.js</code> sin clave fija; sin <code>JWT_SECRET</code> el proceso termina, salvo con <code>NODE_ENV=development/test</code> (clave aleatoria). <code>start-local.cmd</code> crea <code>.env.local</code> con clave aleatoria; <code>.env.example</code>; pruebas con <code>NODE_ENV=test</code>.</td></tr>
+  <tr><td>H-02</td><td class="mono">a642936</td><td>Tabla <code>sessions</code>; <code>issueToken()</code> crea la sesión y la incluye (<code>sid</code>) en el token; <code>requireAuth</code> exige sesión vigente; <code>POST /auth/logout</code>; reset de contraseña revoca todas; vigencia 30 días. La app llama a <code>/auth/logout</code> al salir. 9 pruebas nuevas.</td></tr>
+  <tr><td>H-03</td><td class="mono">35a21a4</td><td>CI compila con <code>--obfuscate --split-debug-info=build/symbols</code> y guarda los símbolos como artefacto aparte; misma instrucción en la guía de Google Play.</td></tr>
+  <tr><td>H-04</td><td class="mono">e1da287</td><td><code>build.gradle.kts</code> avisa al firmar un release con la clave de depuración y falla si se exige firma. CI firma con los secretos <code>ANDROID_KEYSTORE_*</code> y no publica un Release sin ellos.</td></tr>
+  <tr><td>H-05</td><td class="mono">6b2804a</td><td>Los 4 registros con correo pasan a usar el id del usuario; prueba que falla si aparece un correo en los registros.</td></tr>
+  <tr><td>H-06</td><td class="mono">03b740d</td><td><code>network_security_config.xml</code> (sin http, solo certificados del sistema); versión de depuración con http solo al equipo local; <code>insecureApiUrlReason()</code> y bloqueo al arrancar; 3 pruebas.</td></tr>
+  <tr><td>H-07</td><td class="mono">403da4e</td><td><code>flutter pub upgrade</code>: 12 dependencias al día sin cambiar <code>pubspec.yaml</code>.</td></tr>
+</table>
+
+<h3>Mejoras obligatorias</h3>
+<table>
+  <tr><th style="width:45%">Mejora</th><th style="width:12%">Estado</th><th>Cómo se cumple</th></tr>
+  <tr><td>Ningún secreto en el código ni en el repositorio; si se publicó, rotarlo</td><td class="ok">Cumplida</td><td>H-01. La clave publicada era solo de desarrollo y nunca se usó en Railway, que exige su propia <code>JWT_SECRET</code>; ya no firma tokens válidos (prueba en <code>v5.test.mjs</code>). No hay otras claves en los 33 commits.</td></tr>
+  <tr><td>Tokens y datos sensibles con Keystore o Keychain</td><td class="ok">Cumplida</td><td>Ya estaba: <code>flutter_secure_storage</code> 11 (Android Keystore) con migración desde SharedPreferences.</td></tr>
+  <tr><td>Todo el tráfico por HTTPS, sin tráfico en claro en release</td><td class="ok">Cumplida</td><td>H-06.</td></tr>
+  <tr><td>Validación de entradas en la app y de permisos en el servidor</td><td class="ok">Cumplida</td><td>Revisada en M4: validación por campo y rango en la API, permisos por rol y dueño en cada ruta (pruebas existentes de permisos), validadores en la app.</td></tr>
+  <tr><td>Release sin modo debug, sin logs sensibles y con R8</td><td class="ok">Cumplida</td><td>Sin <code>debuggable</code> en el APK; R8 activo (<code>mapping.txt</code>); sin correos en registros (H-05); ofuscación de Dart (H-03).</td></tr>
+</table>
+
+<h2 class="salto">Fase 4 · Verificación antes y después</h2>
+<p>Para cada hallazgo se repitió exactamente la misma prueba. Un hallazgo se da por cerrado solo si la prueba ya no lo reproduce.</p>
+<table>
+  <tr><th style="width:6%">ID</th><th style="width:22%">Prueba repetida</th><th style="width:30%">Antes</th><th style="width:30%">Después</th><th>Resultado</th></tr>
+  <tr><td>H-01</td><td>Token firmado con la clave publicada; servidor sin <code>JWT_SECRET</code></td><td class="mal">HTTP 200 · entra como el usuario</td><td class="ok">El servidor no arranca (código 1); en modo prueba el token → HTTP 401</td><td class="ok">Cerrado</td></tr>
+  <tr><td>H-02</td><td>Iniciar sesión, cerrar sesión y reusar el token</td><td class="mal">logout → 404; token → HTTP 200; 90 días</td><td class="ok">logout → 200; token → HTTP 401; 30 días; la otra sesión sigue abierta</td><td class="ok">Cerrado</td></tr>
+  <tr><td>H-03</td><td>Buscar nombres del código en <code>libapp.so</code></td><td class="mal">Visibles: ChatRoomController ×2, SessionLocalDataSource, AuthRepositoryImpl, ApiClient ×2, saveToken, readToken</td><td class="ok">0 de esos nombres. Solo queda el texto literal <code>cafedirecto-token</code> (nombre de la clave de almacenamiento, no es un secreto)</td><td class="ok">Cerrado</td></tr>
+  <tr><td>H-04</td><td><code>apksigner verify --print-certs</code></td><td class="mal">CN=Android Debug</td><td class="ok">CN=CafeDirecto Clave de PRUEBA (clave propia, creada para la verificación) · release exigido sin clave → falla</td><td class="ok">Cerrado</td></tr>
+  <tr><td>H-05</td><td>Prueba: entrar y revisar los registros</td><td class="mal">Falla: "Entró lena@nordlicht.de (buyer)"</td><td class="ok">Pasa: ningún registro con correo</td><td class="ok">Cerrado</td></tr>
+  <tr><td>H-06</td><td><code>aapt2</code> sobre el manifest del APK + pruebas de URL</td><td class="mal">0 referencias a <code>networkSecurityConfig</code></td><td class="ok"><code>networkSecurityConfig</code> en el manifest; <code>cleartextTrafficPermitted=false</code> y solo certificados del sistema; release con http no arranca</td><td class="ok">Cerrado</td></tr>
+  <tr><td>H-07</td><td><code>flutter pub outdated</code></td><td class="mal">12 actualizables bloqueadas</td><td class="ok">0 actualizables (solo queda google_fonts, versión mayor)</td><td class="ok">Cerrado</td></tr>
+</table>
+
+<h3>Salida de las pruebas (extracto)</h3>
+<pre>$ node herramientas/security-check.mjs server       # ANTES
+H-01 VULNERABLE  token falsificado con la clave pública del repo → HTTP 200
+H-02 VULNERABLE  cerrar sesión → HTTP 404; el mismo token después → HTTP 200; vigencia del token: 90 días
+
+$ node herramientas/security-check.mjs server       # DESPUÉS
+H-01 CORREGIDO   token falsificado con la clave pública del repo → HTTP 401
+H-02 CORREGIDO   cerrar sesión → HTTP 200; el mismo token después → HTTP 401; vigencia del token: 30 días
+
+$ npm test   (API contra PostgreSQL)                 # DESPUÉS
+flow 41 ok · v13 27 ok · v2 43 ok · v3 24 ok · v4 15 ok · v5 9 ok  → 159 pruebas, 0 fallas
+
+$ flutter analyze &amp;&amp; flutter test                      # DESPUÉS
+No issues found! · 39 pruebas, All tests passed!</pre>
+<p>La evidencia completa está en <code>docs/seguridad/evidencia/</code> del repositorio.</p>
+
+<h2>Recomendaciones y mejoras pendientes</h2>
+<table>
+  <tr><th style="width:5%">#</th><th style="width:38%">Recomendación</th><th>Por qué</th></tr>
+  <tr><td>1</td><td>Cerrar H-08: <code>FLAG_SECURE</code> en chat, cotización y contraseña</td><td>Evita que los precios y la negociación queden en capturas o en la vista de apps recientes. Hay que verificarlo en un teléfono.</td></tr>
+  <tr><td>2</td><td>Cargar los secretos de firma en GitHub y crear la clave de lanzamiento</td><td>Desde H-04, un Release sin ellos ya no se publica.</td></tr>
+  <tr><td>3</td><td>Certificate pinning con plan de rotación (mejora opcional)</td><td>Protege contra certificados emitidos a terceros; requiere un plan para cuando Railway renueve el certificado.</td></tr>
+  <tr><td>4</td><td>Play Integrity en las acciones críticas (mejora opcional)</td><td>Detecta APK modificados como el de la amenaza A3.</td></tr>
+  <tr><td>5</td><td>Actualizar <code>google_fonts</code> de 6 a 9</td><td>Cambio de versión mayor; requiere revisar la API de fuentes.</td></tr>
+</table>
+<p class="nota"><b>Al desplegar en Railway:</b> después de H-02, los tokens anteriores (sin id de sesión) dejan de servir y cada usuario
+debe iniciar sesión una vez de nuevo.</p>
+
+<h2 class="salto">Demostración de 10 minutos</h2>
+<table>
+  <tr><th style="width:12%">Minuto</th><th style="width:22%">Quién</th><th>Qué se muestra</th></tr>
+  <tr><td>0:00–1:30</td><td>[Integrante 1]</td><td>La app y su diagrama. Regla base: el teléfono no es de confianza. Datos sensibles y las tres amenazas principales.</td></tr>
+  <tr><td>1:30–3:00</td><td>[Integrante 2]</td><td>Tabla del Top 10: qué cumple y qué no, y las cinco técnicas usadas.</td></tr>
+  <tr><td>3:00–5:30</td><td>[Integrante 3]</td><td><b>Hallazgo 1 en vivo (H-01).</b> <code>git checkout e731dd0</code> (último commit antes de las correcciones), levantar la API y correr <code>security-check.mjs</code>: "VULNERABLE, HTTP 200". Volver a <code>Robert</code>: el servidor no arranca sin clave y el mismo ataque da 401. Mostrar el commit <code>e4df2cb</code>.</td></tr>
+  <tr><td>5:30–8:00</td><td>[Integrante 4]</td><td><b>Hallazgo 2 en vivo (H-02).</b> Mismo script: antes el token sirve después de cerrar sesión; después responde 401. Mostrar <code>v5.test.mjs</code> en verde y el commit <code>a642936</code>.</td></tr>
+  <tr><td>8:00–9:30</td><td>[Integrante 1]</td><td>APK antes y después: <code>apksigner</code> (firma) y nombres en <code>libapp.so</code> (ofuscación).</td></tr>
+  <tr><td>9:30–10:00</td><td>Todos</td><td>Pendientes (H-08, pinning, Play Integrity) y preguntas.</td></tr>
+</table>
+
+<h2>Conceptos del data sheet en CaféDirecto</h2>
+<table>
+  <tr><th style="width:24%">Concepto</th><th>Ejemplo en la app</th></tr>
+  <tr><td>Superficie de ataque</td><td>APK público en GitHub Releases, token en el teléfono, la API en Internet, las fotos por URL, los servicios de traducción.</td></tr>
+  <tr><td>Modelo de amenazas</td><td>Las amenazas A1–A5 de la Fase 1, hechas antes de elegir controles.</td></tr>
+  <tr><td>Mínimo privilegio</td><td>Solo se piden internet, micrófono (dictado) y notificaciones. En la API, solo el caficultor despacha y solo el comprador marca la entrega.</td></tr>
+  <tr><td>Defensa en profundidad</td><td>HTTPS + token cifrado + sesión revocable + permisos en el servidor + límite de intentos: si falla una capa, las otras siguen.</td></tr>
+  <tr><td>Datos en reposo y en tránsito</td><td>En reposo: token en Keystore y contraseñas con bcrypt. En tránsito: HTTPS obligatorio (H-06).</td></tr>
+  <tr><td>Sandbox</td><td>Otras apps no leen el almacenamiento de CaféDirecto; con root sí, por eso el token además va cifrado y la sesión se puede revocar.</td></tr>
+</table>
+
+<p class="pie">Pruebas hechas solo sobre el proyecto del grupo y su servidor local, con cuentas inventadas (<code>@example.test</code>).
+Ningún secreto real ni dato personal aparece en este informe ni en la evidencia. Referencias: OWASP Mobile Top 10 (2024),
+OWASP MASVS y MASTG.</p>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# apksigner verify --print-certs app-release.apk
+Signer #1 certificate DN: CN=CafeDirecto Clave de PRUEBA, O=Tarea Seguridad Movil, C=CO
+Signer #1 certificate SHA-256 digest: b0f2d20da6eab3955f107df66d9702bdbe98b88a2747fccd162b8cdb00c8b991

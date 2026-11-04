@@ -1,0 +1,6 @@
+# REQUIRE_RELEASE_SIGNING=true flutter build apk --release (sin android/key.properties)
+FAILURE: Build failed with an exception.
+* What went wrong:
+Falta android/key.properties: una versión publicada no puede ir firmada con la clave de depuración.
+Gradle task assembleRelease failed with exit code 1
+exit 1
