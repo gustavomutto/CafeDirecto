@@ -1,6 +1,10 @@
 // Pruebas de seguridad móvil (tarea OWASP Mobile Top 10).
 import 'package:cafedirecto/core/config/env.dart';
+import 'package:cafedirecto/core/logging/app_logger.dart';
+import 'package:cafedirecto/presentation/providers/session_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/fakes.dart';
 
 void main() {
   group('H-06 · solo HTTPS', () {
@@ -20,6 +24,16 @@ void main() {
 
     test('la dirección configurada por defecto es segura', () {
       expect(insecureApiUrlReason(apiUrl, release: true), isNull);
+    });
+  });
+
+  group('H-05 · registros sin datos personales', () {
+    test('entrar y crear cuenta no deja el correo en los registros', () async {
+      final s = SessionProvider(FakeAuthRepository());
+      await s.login('lena@nordlicht.de', 'cafe1234');
+      final email = s.user!.email;
+      final leaked = AppLogger.recent.where((e) => e.message.contains(email) || e.message.contains('@')).toList();
+      expect(leaked, isEmpty, reason: 'Registros con el correo: ${leaked.join(' | ')}');
     });
   });
 }

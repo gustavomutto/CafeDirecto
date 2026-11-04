@@ -4,6 +4,8 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 
+// Los registros pueden terminar en Logcat, en capturas o en reportes de error: nunca llevan
+// correos, contraseñas ni tokens; para identificar a alguien se usa su id (hallazgo H-05).
 enum LogLevel { debug, info, warning, error }
 
 class LogEntry {

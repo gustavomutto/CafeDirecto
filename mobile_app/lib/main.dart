@@ -45,7 +45,7 @@ Future<void> main() async {
   await deps.session.restore();
   unawaited(deps.catalog.load()); // regiones del servidor, sin hacer esperar el arranque
   deps.wireSession();
-  AppLogger.i('App iniciada · sesión: ${deps.session.loggedIn ? deps.session.user!.email : 'ninguna'}');
+  AppLogger.i('App iniciada · sesión: ${deps.session.loggedIn ? 'usuario ${deps.session.user!.id}' : 'ninguna'}');
 
   runApp(CafeDirectoApp(deps: deps));
 }

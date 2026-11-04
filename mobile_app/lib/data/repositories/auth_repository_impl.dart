@@ -36,7 +36,7 @@ class AuthRepositoryImpl implements AuthRepository {
     _api.token = token;
     try {
       final account = _track((await _remote.me()).toEntity());
-      AppLogger.i('Sesión restaurada para ${account.user.email}', tag: 'Auth');
+      AppLogger.i('Sesión restaurada (usuario ${account.user.id})', tag: 'Auth');
       return account;
     } on ApiException catch (e) {
       if (e.isUnauthorized) {

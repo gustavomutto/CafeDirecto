@@ -62,12 +62,12 @@ class SessionProvider extends ChangeNotifier {
 
   Future<void> login(String email, String password) async {
     _set(await _auth.login(email, password), resetTab: true);
-    AppLogger.i('Entró ${user?.email} (${user?.role})', tag: 'Sesión');
+    AppLogger.i('Entró el usuario ${user?.id} (${user?.role})', tag: 'Sesión');
   }
 
   Future<void> register(Registration data) async {
     _set(await _auth.register(data), resetTab: true);
-    AppLogger.i('Cuenta creada: ${user?.email} (${user?.role})', tag: 'Sesión');
+    AppLogger.i('Cuenta creada: usuario ${user?.id} (${user?.role})', tag: 'Sesión');
   }
 
   Future<void> logout() async {
